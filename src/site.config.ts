@@ -23,7 +23,7 @@ export const site = {
   villageFacts: {
     intro:
       "[Kurzer Text zur Lage des Dorfes: Landschaft, Nachbarorte, Wahrzeichen und was man hier gesehen haben sollte.]",
-    inhabitants: "`~250`",
+    inhabitants: "~250",
     firstMentioned: "1253",
     district: "Saale-Holzland-Kreis",
     timeline: [
