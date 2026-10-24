@@ -35,11 +35,32 @@ export interface DriveFile {
   tags: string[];
 }
 
+/** With an API key Google answers 404 for anything that isn't shared publicly. */
+function hint(url: URL, status: number): string {
+  if (status === 404 && url.pathname.startsWith("/calendar/")) {
+    return " – the calendar is not public (or the ID is wrong). Calendar settings → Access permissions → “Make available to public” + “See all event details”.";
+  }
+  if (status === 404) {
+    return " – the folder or file is not shared as “Anyone with the link” (or the ID is wrong).";
+  }
+  if (status === 403) {
+    return " – the API key is invalid, restricted, or the Drive/Calendar API is not enabled for its project.";
+  }
+  return "";
+}
+
 async function getJson<T>(url: URL): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Google API ${res.status} for ${url.pathname}: ${body.slice(0, 500)}`);
+    const message = (() => {
+      try {
+        return JSON.parse(body).error?.message as string;
+      } catch {
+        return body.slice(0, 200);
+      }
+    })();
+    throw new Error(`Google API ${res.status} for ${decodeURIComponent(url.pathname)}: ${message}${hint(url, res.status)}`);
   }
   return res.json() as Promise<T>;
 }
@@ -66,6 +87,15 @@ async function listChildren(folderId: string, apiKey: string): Promise<Omit<Driv
 
 /** Recursively lists all files below a folder; each subfolder name becomes a tag. */
 export async function walkDriveFolder(rootId: string, apiKey: string, tags: string[] = []): Promise<DriveFile[]> {
+  // Listing a folder that isn't shared returns an empty list, not an error. Reading the
+  // top folder itself does fail, so an unshared folder can't silently empty the site.
+  if (tags.length === 0) {
+    const url = new URL(`${DRIVE_API}/${rootId}`);
+    url.searchParams.set("key", apiKey);
+    url.searchParams.set("fields", "mimeType");
+    const root = await getJson<{ mimeType: string }>(url);
+    if (root.mimeType !== FOLDER_MIME) throw new Error(`Drive ID ${rootId} is a file, not a folder.`);
+  }
   const children = await listChildren(rootId, apiKey);
   const nested = await Promise.all(
     children.map((child) =>
