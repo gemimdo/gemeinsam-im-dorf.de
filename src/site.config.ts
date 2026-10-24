@@ -14,6 +14,16 @@ export const site = {
   email: "gemimdo@yahoo.com",
   phone: "0176 64103757",
 
+  /** Club description on the Verein page, one string per paragraph. */
+  description: [
+    "Wir sind ein gemeinnütziger Verein im Schkölener Ortsteil Rockau. Unser Ziel ist es, das Zusammenleben aller Menschen im Dorf zu gestalten und Angebote für alle Altersgruppen zu schaffen. Erfolgreiche Projekte des letzten Jahres waren die Einrichtung eines Dorftreffs und Jugendclubs mit Bibliothek, ein Sport-, Spaß- und Spielefest, ein Tischkickerturnier und diverse Kreativ- und Bastelnachmittage.",
+    "In unserem gemeinnützigen Verein sind alle Menschen willkommen.",
+    "Durch die Förderung der Heimatpflege, Heimatkunde und der Ortsverschönerung wollen wir gemeinsam ehrenamtlich tätig werden. Ehrenamt bietet die Möglichkeit, sich aktiv einzubringen und Teil der Gemeinschaft zu werden. Ob bei der Veranstaltung von Dorffesten, in der monatlichen Kaffeerunde, im Jugendclub oder der Bibliothek, bei Arbeitseinsätzen (wie zum Beispiel dem Floßbau und der Reinigung des Dorfteiches), Baumpflanzungen oder den geplanten neuen Projekten.",
+  ],
+  /** Short version for the "Der Verein" box on the start page. */
+  summary:
+    "Wir sind ein gemeinnütziger Verein im Schkölener Ortsteil Rockau. Unser Ziel ist es, das Zusammenleben aller Menschen im Dorf zu gestalten und Angebote für alle Altersgruppen zu schaffen. In unserem Verein sind alle Menschen willkommen.",
+
   board: [
     { name: "Danny Himmelreich", role: "1. Vorsitz" },
     { name: "Dorothea Roth", role: "2. Vorsitz" },
