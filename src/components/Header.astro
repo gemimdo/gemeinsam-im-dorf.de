@@ -1,6 +1,6 @@
 ---
 import Icon from "./Icon.astro";
-import Windmill from "./Windmill.astro";
+import ClockTowerLogo from "./ClockTowerLogo.astro";
 import { site } from "../site.config";
 
 const nav = [
@@ -17,7 +17,7 @@ const isCurrent = (href: string) => (href === "/" ? path === "/" : path.startsWi
 <header class="site-header">
   <div class="bar wrap">
     <a href="/" class="brand">
-      <Windmill variant="logo" speed="r3" stroke="#1E6BB8" strokeWidth={9} width={26} height={42} />
+      <ClockTowerLogo />
       <span class="brand-text">
         <span class="brand-name">{site.clubName} {site.legalForm}</span>
         <span class="brand-sub">{site.village}</span>
