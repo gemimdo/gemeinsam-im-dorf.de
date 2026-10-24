@@ -1,0 +1,123 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { formatBytes, formatDate, mimeBadge, mimeLabel } from "../lib/format";
+
+interface Props {
+  documents: CollectionEntry<"documents">[];
+  id?: string;
+}
+
+const { documents, id = "documents" } = Astro.props;
+const sorted = [...documents].sort((a, b) => a.data.name.localeCompare(b.data.name, "de"));
+---
+
+<ul class="documents" id={id}>
+  {
+    sorted.map(({ data }) => {
+      const meta = [mimeLabel(data.mimeType), formatBytes(data.size), `aktualisiert ${formatDate(data.modifiedAt)}`];
+      return (
+        <li
+          data-tags={JSON.stringify(data.tags)}
+          data-search={[data.name, data.description, ...data.tags].join(" ").toLowerCase()}
+        >
+          <a href={data.url} target="_blank" rel="noopener">
+            <span class="icon" aria-hidden="true">
+              {mimeBadge(data.mimeType)}
+            </span>
+            <span class="text">
+              <span class="name">{data.name}</span>
+              {data.description && <span class="description">{data.description}</span>}
+              <span class="meta">{meta.filter(Boolean).join(" · ")}</span>
+            </span>
+            <span class="tags">
+              {data.tags.map((tag) => (
+                <span class="chip">{tag}</span>
+              ))}
+            </span>
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+{documents.length === 0 && <p class="empty">Noch keine Dokumente vorhanden.</p>}
+<p class="empty" data-no-match hidden>Keine Dokumente gefunden.</p>
+
+<script>
+  for (const list of document.querySelectorAll<HTMLElement>(".documents")) {
+    const noMatch = list.parentElement!.querySelector<HTMLElement>("[data-no-match]")!;
+    list.addEventListener("filterchange", () => {
+      noMatch.hidden = Boolean(list.querySelector("li:not([hidden])")) || list.children.length === 0;
+    });
+  }
+</script>
+
+<style>
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+  a {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: var(--shadow);
+  }
+  a:hover {
+    border-color: var(--accent);
+  }
+  .icon {
+    flex: 0 0 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .text {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+  }
+  .name {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .description {
+    font-size: 0.95rem;
+  }
+  .meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: flex-end;
+  }
+  @media (max-width: 600px) {
+    a {
+      flex-wrap: wrap;
+    }
+    .tags {
+      flex-basis: 100%;
+      justify-content: flex-start;
+      padding-left: 3.75rem;
+    }
+  }
+</style>

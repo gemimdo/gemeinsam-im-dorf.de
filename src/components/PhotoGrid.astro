@@ -1,0 +1,213 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { Image, getImage } from "astro:assets";
+import { formatDate } from "../lib/format";
+
+interface Props {
+  photos: CollectionEntry<"photos">[];
+  id?: string;
+}
+
+const { photos, id = "photos" } = Astro.props;
+const FULL_WIDTH = 1800;
+
+const items = await Promise.all(
+  photos.map(async ({ data }) => {
+    // Drive usually reports dimensions; otherwise Astro reads them from the file header.
+    const size =
+      data.width && data.height ? { width: data.width, height: data.height } : { inferSize: true as const };
+    const fullSize =
+      data.width && data.height
+        ? { width: Math.min(FULL_WIDTH, data.width), height: Math.round((data.height * Math.min(FULL_WIDTH, data.width)) / data.width) }
+        : { inferSize: true as const };
+    const full = await getImage({ src: data.src, ...fullSize, format: "webp", quality: 82 });
+    return { data, size, full: full.src };
+  }),
+);
+---
+
+<ul class="photo-grid" id={id} data-lightbox={`${id}-lightbox`}>
+  {
+    items.map(({ data, size, full }, index) => (
+      <li data-tags={JSON.stringify(data.tags)}>
+        <button
+          type="button"
+          data-index={index}
+          data-full={full}
+          data-caption={data.description ?? data.name}
+          data-date={formatDate(data.takenAt)}
+          aria-label={`Foto vergrößern: ${data.description ?? data.name}`}
+        >
+          <Image
+            src={data.src}
+            {...size}
+            alt={data.description ?? data.name}
+            widths={[320, 480, 720]}
+            sizes="(max-width: 600px) 50vw, 260px"
+            format="webp"
+            quality={75}
+            loading={index < 8 ? "eager" : "lazy"}
+          />
+        </button>
+      </li>
+    ))
+  }
+</ul>
+{photos.length === 0 && <p class="empty">Noch keine Fotos vorhanden.</p>}
+
+<dialog class="lightbox" id={`${id}-lightbox`} aria-label="Fotoansicht">
+  <figure>
+    <img alt="" />
+    <figcaption><span class="caption"></span> <span class="date"></span></figcaption>
+  </figure>
+  <button type="button" class="nav prev" aria-label="Vorheriges Foto">‹</button>
+  <button type="button" class="nav next" aria-label="Nächstes Foto">›</button>
+  <button type="button" class="close" aria-label="Schließen">×</button>
+</dialog>
+
+<script>
+  for (const grid of document.querySelectorAll<HTMLElement>(".photo-grid")) {
+    const dialog = document.getElementById(grid.dataset.lightbox!) as HTMLDialogElement;
+    const img = dialog.querySelector("img")!;
+    const caption = dialog.querySelector(".caption")!;
+    const date = dialog.querySelector(".date")!;
+    // Only navigate between photos the tag filter currently shows.
+    const visible = () =>
+      [...grid.querySelectorAll<HTMLButtonElement>("button[data-full]")].filter((b) => !b.closest("li")!.hidden);
+    let current: HTMLButtonElement | null = null;
+
+    const show = (button: HTMLButtonElement) => {
+      current = button;
+      img.src = button.dataset.full!;
+      img.alt = button.dataset.caption!;
+      caption.textContent = button.dataset.caption!;
+      date.textContent = button.dataset.date!;
+      if (!dialog.open) dialog.showModal();
+    };
+    const step = (delta: number) => {
+      const list = visible();
+      if (!current || list.length === 0) return;
+      const i = list.indexOf(current);
+      show(list[(i + delta + list.length) % list.length]);
+    };
+
+    grid.addEventListener("click", (e) => {
+      const button = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-full]");
+      if (button) show(button);
+    });
+    dialog.querySelector(".prev")!.addEventListener("click", () => step(-1));
+    dialog.querySelector(".next")!.addEventListener("click", () => step(1));
+    dialog.querySelector(".close")!.addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+    dialog.addEventListener("close", () => current?.focus());
+    dialog.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "ArrowRight") step(1);
+    });
+  }
+</script>
+
+<style>
+  .photo-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(160px, 45%), 1fr));
+    gap: 0.5rem;
+  }
+  .photo-grid button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: calc(var(--radius) - 4px);
+    overflow: hidden;
+    cursor: zoom-in;
+    background: var(--border);
+    aspect-ratio: 1;
+  }
+  .photo-grid :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  .photo-grid button:hover :global(img),
+  .photo-grid button:focus-visible :global(img) {
+    transform: scale(1.04);
+  }
+
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(10 10 10 / 0.94);
+    color: #f2f0ea;
+  }
+  .lightbox::backdrop {
+    background: transparent;
+  }
+  .lightbox[open] {
+    display: grid;
+    place-items: center;
+  }
+  figure {
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+    justify-items: center;
+    padding: 3.5rem 1rem 1.5rem;
+    max-width: 100%;
+  }
+  figure img {
+    max-width: min(100%, 1400px);
+    max-height: calc(100dvh - 9rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+  figcaption {
+    text-align: center;
+    font-size: 0.95rem;
+  }
+  figcaption .date {
+    color: #b8b4aa;
+    margin-left: 0.5rem;
+  }
+  .lightbox button {
+    position: absolute;
+    border: 0;
+    background: rgb(255 255 255 / 0.12);
+    color: inherit;
+    font-size: 2rem;
+    line-height: 1;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .lightbox button:hover {
+    background: rgb(255 255 255 / 0.24);
+  }
+  .close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+  .nav {
+    top: 50%;
+    translate: 0 -50%;
+  }
+  .prev {
+    left: 0.75rem;
+  }
+  .next {
+    right: 0.75rem;
+  }
+</style>

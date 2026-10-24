@@ -1,0 +1,30 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import EventList from "../../components/EventList.astro";
+import { env, publicIcsUrl } from "../../lib/google";
+
+const events = await getCollection("events");
+const icsUrl = env.calendarId ? publicIcsUrl(env.calendarId) : undefined;
+---
+
+<Layout title="Kalender" description="Alle anstehenden Termine und Veranstaltungen im Dorf.">
+  <h1>Kalender</h1>
+  <p class="lead">Veranstaltungen, Treffen und Termine – immer aktuell aus unserem gemeinsamen Kalender.</p>
+  {
+    icsUrl && (
+      <p class="subscribe">
+        <a class="button secondary" href={icsUrl.replace(/^https:/, "webcal:")}>
+          Im eigenen Kalender abonnieren
+        </a>
+      </p>
+    )
+  }
+  <EventList events={events} />
+</Layout>
+
+<style>
+  .subscribe {
+    margin: -1rem 0 2rem;
+  }
+</style>

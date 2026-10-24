@@ -1,0 +1,16 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import DocumentList from "../../components/DocumentList.astro";
+import TagFilter from "../../components/TagFilter.astro";
+import { uniqueTags } from "../../lib/tags";
+
+const documents = await getCollection("documents");
+---
+
+<Layout title="Dokumente" description="Protokolle, Formulare und Infos zum Herunterladen.">
+  <h1>Dokumente</h1>
+  <p class="lead">Protokolle, Formulare und Informationen zum Nachlesen.</p>
+  <TagFilter tags={uniqueTags(documents)} target="#document-list" search />
+  <DocumentList documents={documents} id="document-list" />
+</Layout>

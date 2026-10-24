@@ -1,0 +1,16 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import PhotoGrid from "../../components/PhotoGrid.astro";
+import TagFilter from "../../components/TagFilter.astro";
+import { uniqueTags } from "../../lib/tags";
+
+const photos = (await getCollection("photos")).sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime());
+---
+
+<Layout title="Galerie" description="Fotos aus dem Dorfleben.">
+  <h1>Galerie</h1>
+  <p class="lead">Eindrücke aus dem Dorfleben.</p>
+  <TagFilter tags={uniqueTags(photos)} target="#gallery" />
+  <PhotoGrid photos={photos} id="gallery" />
+</Layout>

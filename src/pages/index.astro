@@ -1,0 +1,70 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../layouts/Layout.astro";
+import EventList from "../components/EventList.astro";
+import PhotoGrid from "../components/PhotoGrid.astro";
+
+const now = Date.now();
+const upcoming = (await getCollection("events"))
+  .filter((e) => new Date(e.data.end).getTime() >= now)
+  .sort((a, b) => new Date(a.data.start).getTime() - new Date(b.data.start).getTime())
+  .slice(0, 4);
+const latestPhotos = (await getCollection("photos"))
+  .sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime())
+  .slice(0, 8);
+---
+
+<Layout>
+  <section class="hero">
+    <h1>Gemeinsam im Dorf</h1>
+    <p class="lead">Was bei uns los ist: Termine, Fotos und alles Wichtige an einem Ort.</p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Nächste Termine</h2>
+      <a href="/kalender/">Alle Termine →</a>
+    </div>
+    <EventList events={upcoming} groupByMonth={false} />
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Neueste Fotos</h2>
+      <a href="/galerie/">Zur Galerie →</a>
+    </div>
+    <PhotoGrid photos={latestPhotos} id="latest-photos" />
+  </section>
+
+  <section class="docs-teaser">
+    <h2>Dokumente</h2>
+    <p>Protokolle, Formulare und Infos findest du in unserer Dokumentensammlung.</p>
+    <a class="button" href="/dokumente/">Dokumente ansehen</a>
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    padding-block: 1rem 0.5rem;
+  }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .section-head a {
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .docs-teaser {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: var(--accent-soft);
+    border-radius: var(--radius);
+  }
+  .docs-teaser h2 {
+    margin-top: 0;
+  }
+</style>
