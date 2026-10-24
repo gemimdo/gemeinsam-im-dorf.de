@@ -89,3 +89,9 @@ export function eventsByDay(events: EventView[]): Map<string, EventView[]> {
   }
   return map;
 }
+
+/** webcal:// link to the combined feed (src/pages/termine/alle.ics.ts); calendar apps open it as a subscription. */
+export function subscribeUrl(site: URL | undefined): string {
+  const url = new URL("/termine/alle.ics", site ?? "https://gemeinsam-im-dorf.de");
+  return url.href.replace(/^https?:/, "webcal:");
+}

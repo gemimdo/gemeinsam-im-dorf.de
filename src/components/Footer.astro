@@ -1,9 +1,9 @@
 ---
 import Windmill from "./Windmill.astro";
 import { site } from "../site.config";
-import { env, publicIcsUrl } from "../lib/google";
+import { subscribeUrl } from "../lib/events";
 
-const icsUrl = env.calendarId ? publicIcsUrl(env.calendarId).replace(/^https:/, "webcal:") : "/termine/";
+const icsUrl = subscribeUrl(Astro.site);
 ---
 
 <footer class="foot">

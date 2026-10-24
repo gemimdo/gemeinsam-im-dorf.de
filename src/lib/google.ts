@@ -2,16 +2,30 @@
 // Drive folders and the calendar must be shared publicly ("anyone with the link").
 // Visitors never talk to Google: images are downloaded and optimized by Astro.
 
+import type { EventCategory } from "../site.config";
+
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3/calendars";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 export const env = {
   apiKey: read("GOOGLE_API_KEY"),
-  calendarId: read("GOOGLE_CALENDAR_ID"),
+  /** One public calendar per event category. GOOGLE_CALENDAR_ID is the original single calendar; it counts as Vereinsleben. */
+  calendars: {
+    feste: read("GOOGLE_CALENDAR_FESTE"),
+    familie: read("GOOGLE_CALENDAR_FAMILIE"),
+    verein: read("GOOGLE_CALENDAR_VEREIN") || read("GOOGLE_CALENDAR_ID"),
+  } satisfies Record<EventCategory, string | undefined>,
   photosFolderId: read("DRIVE_PHOTOS_FOLDER_ID"),
   documentsFolderId: read("DRIVE_DOCUMENTS_FOLDER_ID"),
 };
+
+/** The category calendars that have an ID configured. */
+export function configuredCalendars(): [EventCategory, string][] {
+  return (Object.entries(env.calendars) as [EventCategory, string | undefined][]).filter(
+    (entry): entry is [EventCategory, string] => Boolean(entry[1]),
+  );
+}
 
 function read(name: string): string | undefined {
   // import.meta.env only exists inside Astro/Vite; plain scripts (scripts/) use process.env.
@@ -133,7 +147,6 @@ export interface CalendarEvent {
   summary?: string;
   description?: string;
   location?: string;
-  colorId?: string;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
 }
@@ -171,6 +184,12 @@ export function calendarRange(now = new Date()) {
   };
 }
 
-export function publicIcsUrl(calendarId: string): string {
-  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(calendarId)}/public/basic.ics`;
+/** Events of all category calendars, each tagged with its category. */
+export async function listCategoryEvents(apiKey: string, timeMin: Date, timeMax: Date) {
+  const perCalendar = await Promise.all(
+    configuredCalendars().map(async ([category, calendarId]) =>
+      (await listCalendarEvents(calendarId, apiKey, timeMin, timeMax)).map((event) => ({ category, event })),
+    ),
+  );
+  return perCalendar.flat();
 }

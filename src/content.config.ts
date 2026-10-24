@@ -8,11 +8,12 @@ import {
   driveDownloadUrl,
   drivePublicDownloadUrl,
   calendarRange,
+  configuredCalendars,
   env,
-  listCalendarEvents,
+  listCategoryEvents,
   walkDriveFolder,
 } from "./lib/google";
-import { defaultEventCategory, driveFolders, eventColorToCategory } from "./site.config";
+import { driveFolders } from "./site.config";
 
 // Formats Astro's image pipeline (sharp) can process. HEIC from iPhones is not among them.
 const IMAGE_EXT: Record<string, string> = {
@@ -221,17 +222,19 @@ const documents = defineCollection({
 
 const events = defineCollection({
   loader: googleLoader("events", async () => {
-    const { apiKey, calendarId } = env;
-    if (!apiKey || !calendarId) return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_ID");
+    const { apiKey } = env;
+    if (!apiKey || configuredCalendars().length === 0) {
+      return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_FESTE / _FAMILIE / _VEREIN");
+    }
 
     const { from, to } = calendarRange();
-    const items = await listCalendarEvents(calendarId, apiKey, from, to);
+    const items = await listCategoryEvents(apiKey, from, to);
 
-    return items.map((e) => {
+    return items.map(({ category, event: e }) => {
       const details = parseDescription(e.description ? htmlToText(e.description) : "");
       const data = {
         title: e.summary?.trim() || "Termin",
-        category: (e.colorId && eventColorToCategory[e.colorId]) || defaultEventCategory,
+        category,
         location: e.location,
         ...details,
         allDay: Boolean(e.start.date),
@@ -240,7 +243,8 @@ const events = defineCollection({
         start: e.start.dateTime ?? `${e.start.date}T12:00:00`,
         end: e.end.dateTime ?? `${e.end.date}T12:00:00`,
       };
-      return { id: e.id, data, digest: JSON.stringify(data) };
+      // Event IDs are only unique within one calendar.
+      return { id: `${category}-${e.id}`, data, digest: JSON.stringify(data) };
     });
   }),
   schema: z.object({

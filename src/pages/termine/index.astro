@@ -3,13 +3,12 @@ import Layout from "../../layouts/Layout.astro";
 import PageHeader from "../../components/PageHeader.astro";
 import Calendar from "../../components/Calendar.astro";
 import Icon from "../../components/Icon.astro";
-import { getEvents } from "../../lib/events";
-import { env, publicIcsUrl } from "../../lib/google";
+import { getEvents, subscribeUrl as feedUrl } from "../../lib/events";
 import { MONTHS, MONTHS_SHORT, keyToUtc, WEEKDAYS_SHORT } from "../../lib/format";
 import { eventCategories, site } from "../../site.config";
 
 const events = await getEvents();
-const subscribeUrl = env.calendarId ? publicIcsUrl(env.calendarId).replace(/^https:/, "webcal:") : undefined;
+const subscribeUrl = feedUrl(Astro.site);
 
 const groups = new Map<string, typeof events>();
 for (const e of events) {
