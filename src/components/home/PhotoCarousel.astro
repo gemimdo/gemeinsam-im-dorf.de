@@ -1,0 +1,234 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { Image } from "astro:assets";
+import Icon from "../Icon.astro";
+import { MONTHS, TZ } from "../../lib/format";
+
+interface Props {
+  photos: CollectionEntry<"photos">[];
+}
+
+const { photos } = Astro.props;
+const caption = (p: CollectionEntry<"photos">) => p.data.description ?? p.data.name;
+const monthYear = (d: Date) => {
+  const [y, m] = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit" }).format(d).split("-");
+  return `${MONTHS[Number(m) - 1]} ${y}`;
+};
+const meta = (p: CollectionEntry<"photos">) => [p.data.album, monthYear(p.data.takenAt)].filter(Boolean).join(" · ");
+const size = (p: CollectionEntry<"photos">) =>
+  p.data.width && p.data.height ? { width: p.data.width, height: p.data.height } : { inferSize: true as const };
+const thumbSize = (p: CollectionEntry<"photos">) =>
+  p.data.width && p.data.height
+    ? { width: 240, height: Math.round((p.data.height * 240) / p.data.width) }
+    : { inferSize: true as const, width: 240 };
+const pad = (n: number) => String(n).padStart(2, "0");
+---
+
+<div class="carousel" role="region" aria-roledescription="Diashow" aria-label="Bilder aus dem Vereinsleben" data-slideshow data-interval="6000">
+  <div class="stage">
+    {
+      photos.map((p, i) => (
+        <div class:list={["slide", { "is-active": i === 0 }]} data-slide data-caption={caption(p)} data-meta={meta(p)}>
+          <Image
+            src={p.data.src}
+            {...size(p)}
+            alt={caption(p)}
+            widths={[640, 960, 1280, 1920]}
+            sizes="(max-width: 1240px) 100vw, 1160px"
+            format="webp"
+            quality={78}
+            loading="lazy"
+          />
+        </div>
+      ))
+    }
+    <div class="overlay">
+      <div class="info">
+        <span class="meta" data-slide-meta>{meta(photos[0])}</span>
+        <span class="title" data-slide-caption>{caption(photos[0])}</span>
+      </div>
+      {
+        photos.length > 1 && (
+          <div class="controls">
+            <button type="button" class="ctl" data-slide-toggle aria-label="Diashow pausieren">
+              <svg class="i-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+              <svg class="i-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5l11 7-11 7z" />
+              </svg>
+            </button>
+            <button type="button" class="ctl" data-slide-prev aria-label="Vorheriges Bild">
+              <Icon name="chevron-left" />
+            </button>
+            <span class="counter" aria-live="polite">
+              <span data-slide-no>01</span> / {pad(photos.length)}
+            </span>
+            <button type="button" class="ctl" data-slide-next aria-label="Nächstes Bild">
+              <Icon name="chevron-right" />
+            </button>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  {
+    photos.length > 1 && (
+      <div class="thumbs">
+        {photos.map((p, i) => (
+          <button type="button" class="thumb" data-slide-to={i} aria-label={`Bild ${i + 1}: ${caption(p)}`}>
+            <Image src={p.data.src} {...thumbSize(p)} alt="" format="webp" quality={60} loading="lazy" />
+            <span>{p.data.album || caption(p)}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+</div>
+
+<script>
+  import { initSlideshows } from "../../scripts/slideshow";
+  initSlideshows();
+</script>
+
+<style>
+  .carousel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .stage {
+    position: relative;
+    aspect-ratio: 16 / 8;
+    min-height: 260px;
+    border-radius: 28px;
+    overflow: hidden;
+    background: var(--soft-blue);
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  .slide.is-active {
+    opacity: 1;
+  }
+  .slide :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: clamp(16px, 3vw, 32px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px 20px;
+    border-radius: 18px;
+    background: var(--surface);
+    max-width: 460px;
+  }
+  .meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ctl {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 0;
+    background: var(--surface);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .ctl:hover {
+    background: var(--line-soft);
+  }
+  [data-slide-toggle][aria-pressed="false"] .i-play,
+  [data-slide-toggle][aria-pressed="true"] .i-pause {
+    display: none;
+  }
+  .counter {
+    min-width: 64px;
+    text-align: center;
+    padding: 0 4px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--surface);
+    border-radius: 999px;
+    line-height: 48px;
+  }
+  .thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 30%), 1fr));
+    gap: 10px;
+  }
+  .thumb {
+    position: relative;
+    height: 76px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    background: var(--soft-blue);
+    cursor: pointer;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0.75;
+  }
+  .thumb[aria-current="true"] {
+    border-color: var(--ink);
+    opacity: 1;
+  }
+  .thumb :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .thumb span {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    right: 6px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: var(--chip);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>

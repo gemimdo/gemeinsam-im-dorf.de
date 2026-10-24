@@ -1,0 +1,547 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import Icon, { type IconName } from "../../components/Icon.astro";
+import Windmill from "../../components/Windmill.astro";
+import { site } from "../../site.config";
+
+const documents = await getCollection("documents");
+const membershipForm = documents.find((d) => /beitritt/i.test(d.data.title));
+const membershipHref = membershipForm ? `/dokumente/dateien/${membershipForm.data.fileName}` : "/dokumente/";
+
+const activities: { icon: IconName; title: string; text: string }[] = [
+  { icon: "party", title: "Feste feiern", text: "Sommerfest, Maibaum, Weihnachtsmarkt – organisiert von vielen Händen." },
+  { icon: "leaf", title: "Dorf pflegen", text: "Anger, Teich, Bänke und Spielplatz: Arbeitseinsätze zweimal im Jahr." },
+  { icon: "family", title: "Kinder & Familien", text: "Bastelnachmittage, Kinderfest und der Martinsumzug." },
+  { icon: "heart", title: "Nachbarschaft", text: "Willkommenspaket für Neuzugezogene und Hilfe, wenn jemand sie braucht." },
+];
+const { villageFacts: village } = site;
+---
+
+<Layout title="Verein & Dorf" description={`Wer wir sind: der ${site.clubName} und ${site.village}.`}>
+  <section class="intro-section" aria-labelledby="page-title">
+    <div class="wrap intro-grid">
+      <div class="intro-text">
+        <p class="eyebrow with-line">Verein &amp; Dorf</p>
+        <h1 id="page-title" class="display h1">Wer wir sind und wo wir leben.</h1>
+        <p class="lead narrow">
+          Der {site.clubName} ist der Treffpunkt für alle in {site.village} – Alteingesessene, Neuzugezogene, Familien und
+          Feierabend-Gärtner.
+        </p>
+        <nav aria-label="Auf dieser Seite" class="jump">
+          <a href="#verein" class="btn btn-ghost btn-sm">Der Verein</a>
+          <a href="#vorstand" class="btn btn-ghost btn-sm">Vorstand</a>
+          <a href="#dorf" class="btn btn-ghost btn-sm">Das Dorf</a>
+          <a href="#mitglied" class="btn btn-ghost btn-sm">Mitglied werden</a>
+        </nav>
+      </div>
+      <div class="intro-art" aria-hidden="true">
+        <svg class="hills" viewBox="0 0 600 140" preserveAspectRatio="none" fill="none" stroke="#2E7D50" stroke-linecap="round">
+          <path d="M0 100 C120 74 220 74 320 90 C420 106 500 86 600 70" stroke-width="1.4" opacity="0.5" />
+          <path d="M0 124 C140 102 260 104 360 118 C460 132 530 116 600 104" stroke-width="1.4" opacity="0.3" />
+        </svg>
+        <Windmill class="mill-big" strokeWidth={1.5} />
+        <Windmill class="mill-small" stroke="#5E7B92" strokeWidth={1.7} speed="r2" />
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="verein" class="wrap section two-col" aria-labelledby="verein-title">
+      <div class="prose">
+        <h2 id="verein-title" class="display h2">Der Verein</h2>
+        <p>
+          Seit {site.founded} bringt der {site.clubName} Menschen in {site.village} zusammen. Wir sind gemeinnützig,
+          parteipolitisch neutral und offen für alle, die sich für {site.village} einsetzen möchten.
+        </p>
+        <p>[Weiterer Absatz zur Vereinsgeschichte, zu Partnern und dem, was den Verein besonders macht.]</p>
+      </div>
+      <ul class="tiles">
+        {
+          activities.map((a) => (
+            <li class="tile">
+              <Icon name={a.icon} size={28} strokeWidth={1.7} />
+              <h3>{a.title}</h3>
+              <p>{a.text}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="vorstand" class="wrap section stack" aria-labelledby="vorstand-title">
+      <h2 id="vorstand-title" class="display h2">Der Vorstand</h2>
+      <ul class="tiles board">
+        {
+          site.board.map((person, i) => (
+            <li class="tile person">
+              <span class:list={["avatar", i % 2 ? "green" : "blue"]} aria-hidden="true">
+                <Icon name="user" size={28} strokeWidth={1.6} />
+              </span>
+              <span class="person-text">
+                <span class="person-name">{person.name}</span>
+                <span class="person-role">{person.role}</span>
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="dorf" class="wrap section" aria-labelledby="dorf-title">
+      <div class="village">
+        <div class="village-text">
+          <p class="eyebrow">Das Dorf</p>
+          <h2 id="dorf-title" class="display h2">{site.village}</h2>
+          <p class="body">{village.intro}</p>
+          <dl class="facts">
+            <div><dt>Einwohner</dt><dd>{village.inhabitants}</dd></div>
+            <div><dt>erstmals erwähnt</dt><dd>{village.firstMentioned}</dd></div>
+            <div><dt>Landkreis</dt><dd>{village.district}</dd></div>
+          </dl>
+          <ol class="timeline">
+            {
+              village.timeline.map((t) => (
+                <li>
+                  <span class="year">{t.year}</span>
+                  <span>{t.text}</span>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+        <a class="map" href={village.mapUrl} target="_blank" rel="noopener" aria-label={`${village.mapLabel} auf der Karte öffnen`}>
+          <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true" fill="none" stroke-linecap="round">
+            <path d="M-20 300 C80 260 160 280 220 240 C280 200 340 210 420 170" stroke="#FFFFFF" stroke-width="10" />
+            <path d="M120 -20 C140 80 120 160 170 230 C210 290 200 350 230 420" stroke="#FFFFFF" stroke-width="6" />
+            <path d="M0 120 C100 110 180 140 260 120 C320 104 360 110 420 100" stroke="#C7DCEF" stroke-width="2" />
+            <path d="M0 180 C90 170 200 200 300 180" stroke="#C7DCEF" stroke-width="2" />
+            <circle cx="260" cy="90" r="34" fill="#DDEFE3" stroke="none" />
+          </svg>
+          <span class="marker">
+            <span class="marker-label">{village.mapLabel}</span>
+            <svg width="22" height="28" viewBox="0 0 24 30" aria-hidden="true">
+              <path d="M12 29s-10-9-10-17a10 10 0 0 1 20 0c0 8-10 17-10 17z" fill="#1E6BB8" />
+              <circle cx="12" cy="12" r="4" fill="#FFFFFF" />
+            </svg>
+          </span>
+          <span class="map-note">Karte öffnen (OpenStreetMap) →</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="mitglied" class="wrap section" aria-labelledby="mitglied-title">
+      <div class="join">
+        <Windmill class="join-mill" stroke="#FFFFFF" strokeWidth={1.5} speed="r2" />
+        <div class="join-text">
+          <h2 id="mitglied-title" class="display join-title">Mitglied werden</h2>
+          <p>
+            Der Jahresbeitrag beträgt {site.annualFee} für Erwachsene, Kinder und Jugendliche sind {site.childFee}. Jede
+            Mitgliedschaft hilft, Feste und Dorfpflege zu stemmen.
+          </p>
+          <ol class="steps">
+            <li><span class="step">1</span><span>Beitrittserklärung herunterladen und ausfüllen</span></li>
+            <li><span class="step">2</span><span>Im Briefkasten am Dorfgemeinschaftshaus einwerfen oder per E-Mail senden</span></li>
+            <li><span class="step">3</span><span>Willkommen – wir melden uns mit allen Infos</span></li>
+          </ol>
+          <a href={membershipHref} class="btn join-btn" download={membershipForm ? "" : undefined}>
+            <Icon name="download" size={18} />Beitrittserklärung{membershipForm ? ` (${membershipForm.data.ext.toUpperCase()})` : ""}
+          </a>
+        </div>
+
+        <form class="contact" aria-labelledby="form-title" data-mailto={site.email}>
+          <h3 id="form-title">Oder einfach Kontakt aufnehmen</h3>
+          <label>Name<input name="name" type="text" autocomplete="name" required /></label>
+          <label>E-Mail<input name="email" type="email" autocomplete="email" required /></label>
+          <label>Nachricht<textarea name="message" rows="4" required></textarea></label>
+          <button type="submit" class="btn btn-primary">Nachricht senden</button>
+          <p class="note">Öffnet Ihr E-Mail-Programm mit der fertigen Nachricht an {site.email}.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  // No server: the form composes an e-mail in the visitor's own mail program.
+  const form = document.querySelector<HTMLFormElement>("form.contact")!;
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const subject = `Kontakt über die Website: ${data.get("name")}`;
+    const body = `${data.get("message")}\n\n${data.get("name")}\n${data.get("email")}`;
+    location.href = `mailto:${form.dataset.mailto}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+</script>
+
+<style>
+  .intro-section {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .intro-grid {
+    padding-top: clamp(40px, 6vw, 80px);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr));
+    gap: 32px 48px;
+    align-items: end;
+  }
+  .intro-text {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-bottom: clamp(40px, 6vw, 80px);
+  }
+  .narrow {
+    max-width: 36ch;
+  }
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .jump .btn {
+    font-size: 15px;
+  }
+  .intro-art {
+    position: relative;
+    height: clamp(300px, 34vw, 440px);
+    color: var(--ink);
+  }
+  .hills {
+    position: absolute;
+    left: -40px;
+    bottom: 0;
+    width: calc(100% + 240px);
+    height: 140px;
+  }
+  .intro-art :global(.mill-big) {
+    position: absolute;
+    right: 18%;
+    bottom: 30px;
+    height: 90%;
+    width: auto;
+  }
+  .intro-art :global(.mill-small) {
+    position: absolute;
+    right: 54%;
+    bottom: 60px;
+    height: 52%;
+    width: auto;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+    gap: 32px 64px;
+  }
+  .prose {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .prose p,
+  .body {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .tiles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    gap: 14px;
+  }
+  .tile {
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tile :global(svg) {
+    color: var(--accent);
+  }
+  .tile h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 21px;
+  }
+  .tile p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .person {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  .avatar {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar.blue {
+    background: var(--soft-blue);
+  }
+  .avatar.green {
+    background: var(--soft-green);
+  }
+  .avatar.green :global(svg) {
+    color: var(--green);
+  }
+  .person-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .person-name {
+    font-weight: 600;
+    font-size: 17px;
+  }
+  .person-role {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .village {
+    border-radius: 32px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+  }
+  .village-text {
+    padding: clamp(28px, 4vw, 56px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .facts {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .facts div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+  }
+  .facts dt {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .facts dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+  }
+  .timeline {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .timeline li {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line-soft);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .year {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--accent);
+  }
+  .map {
+    position: relative;
+    min-height: 420px;
+    background: var(--soft-blue);
+    display: block;
+    color: var(--muted);
+  }
+  .map > svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .marker {
+    position: absolute;
+    left: 44%;
+    top: 52%;
+    transform: translate(-50%, -100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .marker-label {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--panel);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .map-note {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .join {
+    border-radius: 32px;
+    background: var(--panel);
+    color: #ffffff;
+    padding: clamp(28px, 5vw, 64px);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+    gap: 40px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .join :global(.join-mill) {
+    position: absolute;
+    left: -30px;
+    bottom: -80px;
+    height: 360px;
+    width: auto;
+    opacity: 0.1;
+  }
+  .join-text {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .join-title {
+    font-size: clamp(34px, 4vw, 54px);
+    line-height: 1.02;
+  }
+  .join-text > p {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.65;
+    color: #dce3e8;
+  }
+  .steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .steps li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .steps li > span:last-child {
+    padding-top: 5px;
+  }
+  .step {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .join-btn {
+    align-self: flex-start;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .join-btn:hover {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+  .contact {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: clamp(20px, 3vw, 32px);
+    border-radius: 24px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .contact h3 {
+    margin: 0 0 4px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 22px;
+  }
+  .contact label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .contact input,
+  .contact textarea {
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .contact textarea {
+    padding: 12px 14px;
+    resize: vertical;
+  }
+  .note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+</style>

@@ -22,7 +22,11 @@ export interface DriveFile {
   name: string;
   mimeType: string;
   modifiedTime: string;
+  createdTime: string;
   size?: string;
+  fileExtension?: string;
+  /** Short-lived preview image URL (also for PDFs); size suffix like "=s220". */
+  thumbnailLink?: string;
   description?: string;
   webViewLink?: string;
   imageMediaMetadata?: { width?: number; height?: number; rotation?: number; time?: string };
@@ -49,7 +53,7 @@ async function listChildren(folderId: string, apiKey: string): Promise<Omit<Driv
     url.searchParams.set("pageSize", "1000");
     url.searchParams.set(
       "fields",
-      "nextPageToken, files(id, name, mimeType, modifiedTime, size, description, webViewLink, imageMediaMetadata(width, height, rotation, time))",
+      "nextPageToken, files(id, name, mimeType, modifiedTime, createdTime, size, fileExtension, thumbnailLink, description, webViewLink, imageMediaMetadata(width, height, rotation, time))",
     );
     if (pageToken) url.searchParams.set("pageToken", pageToken);
     const page = await getJson<{ files: Omit<DriveFile, "tags">[]; nextPageToken?: string }>(url);
@@ -76,11 +80,24 @@ export function driveDownloadUrl(fileId: string, apiKey: string): string {
   return `${DRIVE_API}/${fileId}?alt=media&key=${apiKey}`;
 }
 
+/** Google Docs/Sheets/Slides have no binary to download; Drive renders them to PDF instead. */
+export function driveExportPdfUrl(fileId: string, apiKey: string): string {
+  return `${DRIVE_API}/${fileId}/export?mimeType=application%2Fpdf&key=${apiKey}`;
+}
+
+export const GOOGLE_EXPORTABLE = new Set([
+  "application/vnd.google-apps.document",
+  "application/vnd.google-apps.spreadsheet",
+  "application/vnd.google-apps.presentation",
+  "application/vnd.google-apps.drawing",
+]);
+
 export interface CalendarEvent {
   id: string;
   summary?: string;
   description?: string;
   location?: string;
+  colorId?: string;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
 }

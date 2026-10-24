@@ -1,0 +1,110 @@
+---
+import Windmill from "./Windmill.astro";
+import { site } from "../site.config";
+import { env, publicIcsUrl } from "../lib/google";
+
+const icsUrl = env.calendarId ? publicIcsUrl(env.calendarId).replace(/^https:/, "webcal:") : "/termine/";
+---
+
+<footer class="foot">
+  <Windmill class="foot-mill" stroke="#FFFFFF" strokeWidth={1.5} speed="r2" />
+  <div class="wrap inner">
+    <div class="cols">
+      <div class="col">
+        <span class="name">{site.clubName}</span>
+        <span class="soft">{site.address.street}<br />{site.address.zip} {site.address.city}</span>
+      </div>
+      <div class="col">
+        <span class="head">Kontakt</span>
+        <a href={`mailto:${site.email}`}>{site.email}</a>
+        <span class="soft">{site.phone}</span>
+      </div>
+      <nav aria-label="Fußnavigation" class="col">
+        <span class="head">Seiten</span>
+        <a href="/termine/">Termine</a>
+        <a href="/galerie/">Galerie</a>
+        <a href="/verein/">Verein &amp; Dorf</a>
+        <a href="/dokumente/">Dokumente</a>
+      </nav>
+      <div class="col">
+        <span class="head">Kalender abonnieren</span>
+        <span class="soft">Alle Termine direkt im eigenen Kalender.</span>
+        <a href={icsUrl}>iCal-Feed</a>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© {new Date().getFullYear()} {site.clubName} {site.legalForm}</span>
+      <span class="links"><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a></span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .foot {
+    margin-top: var(--section-gap);
+    background: var(--panel);
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+  }
+  .foot :global(.foot-mill) {
+    position: absolute;
+    right: -40px;
+    bottom: -60px;
+    height: 380px;
+    width: auto;
+    opacity: 0.12;
+  }
+  .inner {
+    position: relative;
+    padding-top: 64px;
+    padding-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: 32px;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 15px;
+  }
+  .name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+  }
+  .head {
+    font-weight: 600;
+  }
+  .soft {
+    color: #a9b6c1;
+    line-height: 1.6;
+  }
+  a {
+    color: #dce3e8;
+    align-self: flex-start;
+  }
+  a:hover {
+    color: #ffffff;
+  }
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid #2c3b48;
+    font-size: 14px;
+    color: #a9b6c1;
+  }
+  .links {
+    display: flex;
+    gap: 20px;
+  }
+</style>

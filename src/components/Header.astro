@@ -1,0 +1,230 @@
+---
+import Icon from "./Icon.astro";
+import Windmill from "./Windmill.astro";
+import { site } from "../site.config";
+
+const nav = [
+  { href: "/", label: "Start" },
+  { href: "/termine/", label: "Termine" },
+  { href: "/galerie/", label: "Galerie" },
+  { href: "/verein/", label: "Verein & Dorf" },
+  { href: "/dokumente/", label: "Dokumente" },
+];
+const path = Astro.url.pathname;
+const isCurrent = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
+---
+
+<header class="site-header">
+  <div class="bar wrap">
+    <a href="/" class="brand">
+      <Windmill variant="logo" speed="r3" stroke="#1E6BB8" strokeWidth={9} width={26} height={42} />
+      <span class="brand-text">
+        <span class="brand-name">{site.clubName}</span>
+        <span class="brand-sub">{site.village} {site.legalForm}</span>
+      </span>
+    </a>
+
+    <nav aria-label="Hauptnavigation" class="nav-desktop">
+      {
+        nav.map((item) => (
+          <a href={item.href} class="navlink" aria-current={isCurrent(item.href) ? "page" : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+      <button type="button" class="iconbtn round theme-toggle" aria-label="Dunkles Design" aria-pressed="false">
+        <Icon name="moon" strokeWidth={1.8} class="icon-moon" />
+        <Icon name="sun" strokeWidth={1.8} class="icon-sun" />
+      </button>
+      <a href="/verein/#mitglied" class="btn btn-primary nav-cta">Mitglied werden</a>
+    </nav>
+
+    <div class="nav-mobile">
+      <button type="button" class="iconbtn round theme-toggle" aria-label="Dunkles Design" aria-pressed="false">
+        <Icon name="moon" strokeWidth={1.8} class="icon-moon" />
+        <Icon name="sun" strokeWidth={1.8} class="icon-sun" />
+      </button>
+      <button type="button" class="iconbtn menu-toggle" aria-label="Menü" aria-expanded="false" aria-controls="mobile-menu">
+        <Icon name="menu" size={22} class="icon-open" />
+        <Icon name="close" size={22} class="icon-close" />
+      </button>
+    </div>
+  </div>
+
+  <nav id="mobile-menu" class="nav-panel" aria-label="Menü" hidden>
+    {
+      nav.map((item) => (
+        <a href={item.href} class="mlink" aria-current={isCurrent(item.href) ? "page" : undefined}>
+          {item.label}
+        </a>
+      ))
+    }
+    <a href="/verein/#mitglied" class="btn btn-primary">Mitglied werden</a>
+  </nav>
+</header>
+
+<script>
+  const KEY = "dorfverein-theme";
+  const root = document.documentElement;
+  const isDark = () =>
+    root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const sync = () => {
+    for (const b of document.querySelectorAll(".theme-toggle")) b.setAttribute("aria-pressed", String(isDark()));
+  };
+  for (const button of document.querySelectorAll(".theme-toggle")) {
+    button.addEventListener("click", () => {
+      const next = isDark() ? "light" : "dark";
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem(KEY, next);
+      } catch {}
+      sync();
+    });
+  }
+  sync();
+
+  const menuButton = document.querySelector<HTMLButtonElement>(".menu-toggle")!;
+  const panel = document.getElementById("mobile-menu")!;
+  const setMenu = (open: boolean) => {
+    panel.hidden = !open;
+    menuButton.setAttribute("aria-expanded", String(open));
+  };
+  menuButton.addEventListener("click", () => setMenu(panel.hidden === true));
+  panel.addEventListener("click", (e) => {
+    if ((e.target as HTMLElement).closest("a")) setMenu(false);
+  });
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar {
+    padding-block: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 32px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .brand:hover {
+    color: var(--ink);
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.1;
+  }
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+  }
+  .brand-sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .nav-desktop {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .navlink {
+    padding: 12px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .navlink:hover {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+  .navlink[aria-current="page"] {
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--line-soft);
+  }
+  .nav-desktop .theme-toggle,
+  .nav-cta {
+    margin-left: 4px;
+  }
+  .nav-cta {
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+  .nav-mobile {
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-panel {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px var(--gutter) 20px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .nav-panel:not([hidden]) {
+    display: flex;
+  }
+  .mlink {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .mlink:hover,
+  .mlink[aria-current="page"] {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+  .mlink[aria-current="page"] {
+    font-weight: 600;
+  }
+  .nav-panel .btn {
+    margin-top: 8px;
+  }
+
+  .theme-toggle[aria-pressed="true"] :global(.icon-moon),
+  .theme-toggle[aria-pressed="false"] :global(.icon-sun),
+  .menu-toggle[aria-expanded="true"] :global(.icon-open),
+  .menu-toggle[aria-expanded="false"] :global(.icon-close) {
+    display: none;
+  }
+
+  @media (max-width: 1080px) {
+    .nav-desktop {
+      display: none;
+    }
+    .nav-mobile {
+      display: flex;
+    }
+  }
+  @media (min-width: 1081px) {
+    .nav-panel {
+      display: none !important;
+    }
+  }
+</style>

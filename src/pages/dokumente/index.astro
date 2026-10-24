@@ -1,16 +1,323 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
-import DocumentList from "../../components/DocumentList.astro";
-import TagFilter from "../../components/TagFilter.astro";
-import { uniqueTags } from "../../lib/tags";
+import PageHeader from "../../components/PageHeader.astro";
+import Icon from "../../components/Icon.astro";
+import { fileTypeLabel, formatBytes, formatShortDate } from "../../lib/format";
+import { site } from "../../site.config";
 
-const documents = await getCollection("documents");
+const documents = (await getCollection("documents")).sort(
+  (a, b) => a.data.category.localeCompare(b.data.category, "de") || a.data.title.localeCompare(b.data.title, "de"),
+);
+const categories = [...new Set(documents.map((d) => d.data.category))];
+// Tints rotate through the design's three soft colours.
+const tints = ["blue", "green", "gray"];
+const tintOf = (category: string) => tints[categories.indexOf(category) % tints.length];
 ---
 
-<Layout title="Dokumente" description="Protokolle, Formulare und Infos zum Herunterladen.">
-  <h1>Dokumente</h1>
-  <p class="lead">Protokolle, Formulare und Informationen zum Nachlesen.</p>
-  <TagFilter tags={uniqueTags(documents)} target="#document-list" search />
-  <DocumentList documents={documents} id="document-list" />
+<Layout title="Dokumente" description="Satzung, Formulare und Protokolle zum Herunterladen.">
+  <PageHeader
+    eyebrow="Dokumente"
+    title="Alles zum Nachlesen"
+    lead="Satzung, Formulare, Protokolle und Aushänge zum Herunterladen."
+  >
+    <div slot="below" class="filters">
+      <label class="search" for="doc-search">
+        <span class="visually-hidden">Dokumente durchsuchen</span>
+        <Icon name="search" size={20} />
+        <input id="doc-search" type="search" placeholder="Suchen, z. B. Satzung" autocomplete="off" />
+      </label>
+      {
+        categories.length > 1 && (
+          <div class="pill-group" role="group" aria-label="Kategorie">
+            <button type="button" class="pill" data-category="" aria-pressed="true">
+              Alle
+            </button>
+            {categories.map((c) => (
+              <button type="button" class="pill" data-category={c} aria-pressed="false">
+                {c}
+              </button>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </PageHeader>
+
+  <main class="wrap main">
+    <div class="list-col">
+      <p class="count" aria-live="polite" data-count>{documents.length} Dokumente</p>
+      {
+        documents.length > 0 && (
+          <ul class="docs">
+            {documents.map(({ data }) => (
+              <li
+                class="row"
+                data-doc-category={data.category}
+                data-search={[data.title, data.description, data.category, ...data.tags].join(" ").toLowerCase()}
+              >
+                <span class={`doc-icon tint-${tintOf(data.category)}`} aria-hidden="true">
+                  <Icon name="file" size={22} strokeWidth={1.8} />
+                </span>
+                <span class="doc-text">
+                  <span class="doc-title">{data.title}</span>
+                  {data.description && <span class="doc-desc">{data.description}</span>}
+                  <span class="doc-meta">
+                    {[data.category, `Stand ${formatShortDate(data.modifiedAt)}`, fileTypeLabel(data.ext), formatBytes(data.size)]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+                <a href={`/dokumente/dateien/${data.fileName}`} download class="btn btn-ghost btn-sm dl" aria-label={`Herunterladen: ${data.title}`}>
+                  <Icon name="download" size={16} />
+                  Herunterladen
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      <p class="empty" data-empty hidden={documents.length > 0}>
+        {documents.length ? "Kein Dokument gefunden. Versuchen Sie einen anderen Suchbegriff." : "Noch keine Dokumente vorhanden."}
+      </p>
+    </div>
+
+    <aside class="side">
+      <div class="members">
+        <Icon name="lock" size={28} strokeWidth={1.8} />
+        <h2 class="side-title">Für Mitglieder</h2>
+        <p>Protokolle und Kassenberichte geben wir an Mitglieder weiter. Fragen Sie einfach beim Vorstand nach.</p>
+        <a href={`mailto:${site.email}?subject=${encodeURIComponent("Dokumente für Mitglieder")}`} class="btn btn-sm light-btn">Beim Vorstand anfragen</a>
+      </div>
+      <div class="missing">
+        <h2 class="side-title small">Etwas fehlt?</h2>
+        <p>Schreiben Sie uns, wir schicken Ihnen das Dokument gern zu.</p>
+        <a href={`mailto:${site.email}`} class="mail">{site.email}</a>
+      </div>
+    </aside>
+  </main>
 </Layout>
+
+<script>
+  const rows = [...document.querySelectorAll<HTMLElement>("[data-doc-category]")];
+  const input = document.querySelector<HTMLInputElement>("#doc-search")!;
+  const count = document.querySelector<HTMLElement>("[data-count]")!;
+  const empty = document.querySelector<HTMLElement>("[data-empty]")!;
+  const pills = [...document.querySelectorAll<HTMLElement>("[data-category]")];
+  let category = "";
+
+  const apply = () => {
+    const q = input.value.trim().toLowerCase();
+    let shown = 0;
+    for (const row of rows) {
+      const match = (!category || row.dataset.docCategory === category) && (!q || row.dataset.search!.includes(q));
+      row.hidden = !match;
+      if (match) shown++;
+    }
+    count.textContent = `${shown} ${shown === 1 ? "Dokument" : "Dokumente"}`;
+    if (rows.length) empty.hidden = shown > 0;
+  };
+
+  const pick = (name: string) => {
+    category = name;
+    pills.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.category === name)));
+    apply();
+  };
+
+  pills.forEach((p) => p.addEventListener("click", () => pick(p.dataset.category!)));
+  input.addEventListener("input", apply);
+
+  // Links like /dokumente/?kategorie=Aushänge open with that category selected.
+  const preset = new URLSearchParams(location.search).get("kategorie");
+  if (preset && pills.some((p) => p.dataset.category === preset)) pick(preset);
+</script>
+
+<style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .search {
+    flex: 1 1 320px;
+    max-width: 460px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+  }
+  .search :global(svg) {
+    position: absolute;
+    left: 18px;
+    pointer-events: none;
+  }
+  .search input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 16px 0 48px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .main {
+    padding-top: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .list-col {
+    flex: 999 1 640px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .count {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .docs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .row:last-child {
+    border-bottom: 0;
+  }
+  .row:hover {
+    background: var(--bg);
+  }
+  .doc-icon {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tint-blue {
+    background: var(--soft-blue);
+    color: var(--accent);
+  }
+  .tint-green {
+    background: var(--soft-green);
+    color: var(--green);
+  }
+  .tint-gray {
+    background: var(--soft-gray);
+    color: var(--ink);
+  }
+  .doc-text {
+    flex: 1 1 260px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .doc-title {
+    font-weight: 600;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+  .doc-desc {
+    font-size: 15px;
+  }
+  .doc-meta {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .dl {
+    min-height: 44px;
+  }
+  .empty {
+    margin: 0;
+    padding: 32px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    font-size: 16px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .side {
+    flex: 1 1 300px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .members,
+  .missing {
+    padding: 28px;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .members {
+    background: var(--panel);
+    color: #ffffff;
+  }
+  .members p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #dce3e8;
+  }
+  .light-btn {
+    align-self: flex-start;
+    min-height: 48px;
+    background: #ffffff;
+    color: #13202b;
+  }
+  .light-btn:hover {
+    background: #e8eef3;
+    color: #13202b;
+  }
+  .side-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .side-title.small {
+    font-size: 20px;
+  }
+  .missing {
+    background: var(--soft-blue);
+    gap: 10px;
+  }
+  .missing p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .mail {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--soft-blue-text);
+    padding: 8px 0;
+    align-self: flex-start;
+  }
+</style>

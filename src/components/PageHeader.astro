@@ -1,0 +1,77 @@
+---
+// Title block at the top of every subpage. Slots: "actions" (right of the title),
+// "below" (filters row), "art" (decoration on the right, Verein page).
+interface Props {
+  eyebrow: string;
+  title: string;
+  lead?: string;
+  wave?: boolean;
+}
+
+const { eyebrow, title, lead, wave = false } = Astro.props;
+const hasBelow = Astro.slots.has("below");
+---
+
+<section class:list={["page-header", { "has-below": hasBelow }]} aria-labelledby="page-title">
+  {
+    wave && (
+      <svg class="wave" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true" fill="none" stroke="#2E7D50" stroke-linecap="round">
+        <path d="M0 90 C140 66 260 70 360 84 C460 98 530 82 600 70" stroke-width="1.2" opacity="0.4" />
+        <path d="M0 110 C160 92 300 96 400 106 C480 114 550 106 600 100" stroke-width="1.2" opacity="0.22" />
+      </svg>
+    )
+  }
+  <div class="wrap inner">
+    <div class="top">
+      <div class="titles">
+        <p class="eyebrow with-line">{eyebrow}</p>
+        <h1 id="page-title" class="display h1">{title}</h1>
+        {lead && <p class="lead">{lead}</p>}
+        <slot name="intro" />
+      </div>
+      <slot name="actions" />
+      <slot name="art" />
+    </div>
+    <slot name="below" />
+  </div>
+</section>
+
+<style>
+  .page-header {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .wave {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 90px;
+  }
+  .inner {
+    position: relative;
+    padding-top: clamp(40px, 6vw, 72px);
+    padding-bottom: clamp(56px, 7vw, 88px);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .has-below .inner {
+    padding-bottom: 32px;
+  }
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .titles {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 680px;
+  }
+</style>

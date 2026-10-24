@@ -1,21 +1,16 @@
 ---
 import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { site } from "../site.config";
 
 interface Props {
   title?: string;
   description?: string;
 }
 
-const { title, description = "Termine, Fotos und Dokumente aus unserem Dorf." } = Astro.props;
-const siteName = "Gemeinsam im Dorf";
-const nav = [
-  { href: "/", label: "Start" },
-  { href: "/kalender/", label: "Kalender" },
-  { href: "/galerie/", label: "Galerie" },
-  { href: "/dokumente/", label: "Dokumente" },
-];
-const current = Astro.url.pathname;
-const isActive = (href: string) => (href === "/" ? current === "/" : current.startsWith(href));
+const { title, description = `${site.clubName} – Termine, Fotos und Neuigkeiten aus ${site.village}.` } = Astro.props;
+const fullTitle = title ? `${title} – ${site.clubName}` : site.clubName;
 ---
 
 <!doctype html>
@@ -24,88 +19,20 @@ const isActive = (href: string) => (href === "/" ? current === "/" : current.sta
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>{title ? `${title} · ${siteName}` : siteName}</title>
+    <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      // Applied before first paint so a stored dark theme never flashes light.
+      try {
+        const t = localStorage.getItem("dorfverein-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
   </head>
   <body>
-    <header class="site-header">
-      <div class="container bar">
-        <a href="/" class="brand">{siteName}</a>
-        <nav aria-label="Hauptnavigation">
-          {
-            nav.map((item) => (
-              <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
-                {item.label}
-              </a>
-            ))
-          }
-        </nav>
-      </div>
-    </header>
-    <main class="container">
-      <slot />
-    </main>
-    <footer class="site-footer">
-      <div class="container">
-        <span>© {new Date().getFullYear()} {siteName}</span>
-      </div>
-    </footer>
+    <Header />
+    <slot />
+    <Footer />
   </body>
 </html>
-
-<style>
-  .site-header {
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  .bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-    padding-block: 0.85rem;
-  }
-  .brand {
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text);
-    text-decoration: none;
-  }
-  nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-inline: -0.6rem;
-  }
-  nav a {
-    padding: 0.3rem 0.6rem;
-    border-radius: 999px;
-    color: var(--muted);
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  nav a:hover {
-    color: var(--text);
-  }
-  nav a[aria-current="page"] {
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-weight: 500;
-  }
-  main {
-    padding-block: 2.5rem 4rem;
-    min-height: 70vh;
-  }
-  .site-footer {
-    border-top: 1px solid var(--border);
-    padding-block: 1.5rem;
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-</style>

@@ -1,0 +1,347 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getImage, inferRemoteSize } from "astro:assets";
+import Icon from "../Icon.astro";
+import { formatDate } from "../../lib/format";
+
+interface Props {
+  flyer: CollectionEntry<"documents">;
+}
+
+const { flyer } = Astro.props;
+const { data } = flyer;
+const fileUrl = `/dokumente/dateien/${data.fileName}`;
+const isImage = data.mimeType.startsWith("image/");
+
+// Preview: the flyer itself if it is an image, otherwise Drive's rendered first page.
+let preview: { src: string; jpg: string } | undefined;
+const previewSource = isImage ? data.source : data.thumbnail;
+if (previewSource) {
+  try {
+    const { width, height } = await inferRemoteSize(previewSource);
+    const w = Math.min(1400, width);
+    const dims = { width: w, height: Math.round((height * w) / width) };
+    const [webp, jpg] = await Promise.all([
+      getImage({ src: previewSource, ...dims, format: "webp", quality: 85 }),
+      getImage({ src: previewSource, ...dims, format: "jpg", quality: 88 }),
+    ]);
+    preview = { src: webp.src, jpg: jpg.src };
+  } catch (error) {
+    console.warn(`[flyer] no preview image for "${data.title}": ${(error as Error).message}`);
+  }
+}
+const posted = formatDate(data.createdAt);
+---
+
+<section class="wrap section" aria-labelledby="news-title">
+  <div class="row">
+    <figure class="figure">
+      <button type="button" class="flyer" data-flyer-open aria-haspopup="dialog" aria-label={`Flyer vergrößern: ${data.title}`}>
+        {
+          preview ? (
+            <img src={preview.src} alt="" loading="lazy" />
+          ) : (
+            <span class="placeholder">
+              <Icon name="flyer" size={40} strokeWidth={1.5} />
+              <span class="ph-title">{data.title}</span>
+              <span class="ph-sub">{data.ext.toUpperCase()} · zum Öffnen tippen</span>
+            </span>
+          )
+        }
+        <span class="zoom" aria-hidden="true"><Icon name="zoom" size={16} />Vergrößern</span>
+      </button>
+      <figcaption>Aushang vom {posted}</figcaption>
+    </figure>
+
+    <div class="text">
+      <p class="eyebrow with-line">Aktueller Aushang</p>
+      <h2 id="news-title" class="display h2">Aktuelles aus dem Dorf</h2>
+      <div class="headline">
+        <span class="headline-title">{data.title}</span>
+        {data.description && <span class="headline-when">{data.description}</span>}
+      </div>
+      <p class="hint">Den Flyer gern ausdrucken, weiterleiten oder ans Schwarze Brett hängen.</p>
+      <div class="actions">
+        <a href={fileUrl} download class="btn btn-primary">
+          <Icon name="download" size={18} />Flyer herunterladen ({data.ext.toUpperCase()})
+        </a>
+        {
+          preview && !isImage && (
+            <a href={preview.jpg} download={`${data.fileName.replace(/\.[^.]+$/, "")}.jpg`} class="btn btn-ghost">
+              Als Bild (JPG)
+            </a>
+          )
+        }
+      </div>
+      <a href={`/dokumente/?kategorie=${encodeURIComponent(data.category)}`} class="text-link">Ältere Aushänge →</a>
+    </div>
+  </div>
+
+  <dialog class="flyer-dialog" aria-labelledby="flyer-dlg-title">
+    <button type="button" class="dlg-backdrop" data-flyer-close tabindex="-1" aria-hidden="true"></button>
+    <div class="dlg-inner">
+      <div class="dlg-sheet">
+        {
+          preview ? (
+            <img src={preview.src} alt={`Flyer: ${data.title}`} />
+          ) : (
+            <span class="placeholder">
+              <Icon name="flyer" size={56} strokeWidth={1.4} />
+              <span class="ph-title">{data.title}</span>
+            </span>
+          )
+        }
+      </div>
+      <div class="dlg-card">
+        <span class="dlg-posted">Aushang vom {posted}</span>
+        <h2 id="flyer-dlg-title" class="dlg-title">{data.title}</h2>
+        {data.description && <span class="dlg-when">{data.description}</span>}
+        <a href={fileUrl} download class="btn btn-primary"><Icon name="download" size={18} />{data.ext.toUpperCase()} herunterladen</a>
+        {
+          preview && !isImage && (
+            <a href={preview.jpg} download={`${data.fileName.replace(/\.[^.]+$/, "")}.jpg`} class="btn btn-ghost">
+              Als Bild (JPG)
+            </a>
+          )
+        }
+        <button type="button" class="btn dlg-close-text" data-flyer-close>Schließen</button>
+      </div>
+    </div>
+    <button type="button" class="dlg-x" data-flyer-close aria-label="Flyer schließen"><Icon name="close" /></button>
+  </dialog>
+</section>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>(".flyer-dialog");
+  document.querySelector("[data-flyer-open]")?.addEventListener("click", () => dialog?.showModal());
+  for (const el of document.querySelectorAll("[data-flyer-close]")) {
+    el.addEventListener("click", () => dialog?.close());
+  }
+</script>
+
+<style>
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 32px clamp(32px, 6vw, 88px);
+  }
+  .figure {
+    flex: 1 1 320px;
+    max-width: 440px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .flyer {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    aspect-ratio: 1 / 1.414;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--soft-blue);
+    border: 1px solid var(--line);
+    box-shadow: 0 32px 64px -32px rgb(19 32 43 / 0.45);
+    cursor: zoom-in;
+    transition: transform 0.25s ease;
+  }
+  .flyer:hover {
+    transform: translateY(-4px);
+  }
+  .flyer:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+  .flyer img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+  .placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--soft-blue-text);
+  }
+  .ph-title {
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .ph-sub {
+    font-size: 14px;
+  }
+  .zoom {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--chip);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  figcaption {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .text {
+    flex: 1 1 360px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .headline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .headline-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1.2;
+  }
+  .headline-when {
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .hint {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .flyer-dialog {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: clamp(12px, 3vw, 40px);
+    border: 0;
+    background: transparent;
+    overflow-y: auto;
+  }
+  .flyer-dialog[open] {
+    display: flex;
+  }
+  .flyer-dialog::backdrop {
+    background: rgb(12 20 28 / 0.88);
+  }
+  .dlg-backdrop {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: zoom-out;
+  }
+  .dlg-inner {
+    position: relative;
+    margin: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 20px 28px;
+    width: 100%;
+    max-width: 1040px;
+  }
+  .dlg-sheet {
+    position: relative;
+    height: min(82vh, 1000px);
+    max-width: 100%;
+    aspect-ratio: 1 / 1.414;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.6);
+  }
+  .dlg-sheet img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .dlg-sheet .placeholder {
+    background: var(--soft-blue);
+  }
+  .dlg-card {
+    flex: 0 1 300px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .dlg-card .btn {
+    min-height: 48px;
+    font-size: 15px;
+  }
+  .dlg-posted {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .dlg-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .dlg-when {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .dlg-close-text {
+    background: transparent;
+    color: var(--muted);
+  }
+  .dlg-close-text:hover {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+  .dlg-x {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 0;
+    background: #ffffff;
+    color: #13202b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+</style>

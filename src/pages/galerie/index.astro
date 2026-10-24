@@ -1,16 +1,387 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
+import { Image, getImage } from "astro:assets";
 import Layout from "../../layouts/Layout.astro";
-import PhotoGrid from "../../components/PhotoGrid.astro";
-import TagFilter from "../../components/TagFilter.astro";
-import { uniqueTags } from "../../lib/tags";
+import PageHeader from "../../components/PageHeader.astro";
+import Icon from "../../components/Icon.astro";
+import { site } from "../../site.config";
 
-const photos = (await getCollection("photos")).sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime());
+type Photo = CollectionEntry<"photos">;
+
+const photos = (await getCollection("photos"))
+  .filter((p) => !p.data.isHero)
+  .sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime());
+
+// Albums in order of their newest photo.
+const albums = [...new Set(photos.map((p) => p.data.album).filter(Boolean))];
+
+const caption = (p: Photo) => p.data.description ?? p.data.name;
+const dims = (p: Photo, width: number) =>
+  p.data.width && p.data.height
+    ? { width: Math.min(width, p.data.width), height: Math.round((p.data.height * Math.min(width, p.data.width)) / p.data.width) }
+    : { inferSize: true as const };
+const original = (p: Photo) =>
+  p.data.width && p.data.height ? { width: p.data.width, height: p.data.height } : { inferSize: true as const };
+
+const items = await Promise.all(
+  photos.map(async (p) => {
+    const [full, thumb] = await Promise.all([
+      getImage({ src: p.data.src, ...dims(p, 1800), format: "webp", quality: 82 }),
+      getImage({ src: p.data.src, ...dims(p, 160), format: "webp", quality: 60 }),
+    ]);
+    const portrait = Boolean(p.data.width && p.data.height && p.data.height > p.data.width * 1.1);
+    return { p, full: full.src, thumb: thumb.src, portrait };
+  }),
+);
 ---
 
-<Layout title="Galerie" description="Fotos aus dem Dorfleben.">
-  <h1>Galerie</h1>
-  <p class="lead">Eindrücke aus dem Dorfleben.</p>
-  <TagFilter tags={uniqueTags(photos)} target="#gallery" />
-  <PhotoGrid photos={photos} id="gallery" />
+<Layout title="Galerie" description={`Fotos aus dem Dorfleben in ${site.village}.`}>
+  <PageHeader
+    eyebrow="Galerie"
+    title="Unser Dorf in Bildern"
+    lead="Feste, Arbeitseinsätze und kleine Momente dazwischen. Tippen Sie ein Bild an, um die Diashow zu öffnen."
+  >
+    <a slot="actions" href={`mailto:${site.email}?subject=${encodeURIComponent("Fotos für die Galerie")}`} class="btn btn-ghost">
+      <Icon name="camera" size={18} />Fotos einreichen
+    </a>
+    {
+      albums.length > 1 && (
+        <div slot="below" class="pill-group" role="group" aria-label="Alben filtern">
+          <button type="button" class="pill" data-album="" aria-pressed="true">
+            Alle
+          </button>
+          {albums.map((a) => (
+            <button type="button" class="pill" data-album={a} aria-pressed="false">
+              {a}
+            </button>
+          ))}
+        </div>
+      )
+    }
+  </PageHeader>
+
+  <main class="wrap main">
+    {
+      items.length === 0 ? (
+        <p class="empty">Noch keine Fotos vorhanden.</p>
+      ) : (
+        <ul class="grid" id="gallery">
+          {items.map(({ p, full, thumb, portrait }, i) => (
+            <li class:list={{ tall: portrait }} data-album={p.data.album}>
+              <button
+                type="button"
+                class="tile"
+                data-index={i}
+                data-full={full}
+                data-thumb={thumb}
+                data-caption={caption(p)}
+                data-album-label={p.data.album}
+                aria-label={`Bild öffnen: ${caption(p)}`}
+              >
+                <Image
+                  src={p.data.src}
+                  {...original(p)}
+                  alt={caption(p)}
+                  widths={[400, 640, 960]}
+                  sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 400px"
+                  format="webp"
+                  quality={75}
+                  loading={i < 6 ? "eager" : "lazy"}
+                />
+                <span class="label">
+                  <span class="label-title">{caption(p)}</span>
+                  {p.data.album && <span class="label-album">{p.data.album}</span>}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </main>
+
+  <dialog class="lightbox" aria-label="Diashow">
+    <div class="lb-top">
+      <span class="lb-count" aria-live="polite"></span>
+      <button type="button" class="lb-btn" data-lb-close aria-label="Diashow schließen"><Icon name="close" /></button>
+    </div>
+    <div class="lb-stage">
+      <button type="button" class="lb-btn lb-nav" data-lb-prev aria-label="Vorheriges Bild"><Icon name="chevron-left" /></button>
+      <div class="lb-frame"><img alt="" /></div>
+      <button type="button" class="lb-btn lb-nav" data-lb-next aria-label="Nächstes Bild"><Icon name="chevron-right" /></button>
+    </div>
+    <div class="lb-bottom">
+      <div class="lb-text">
+        <span class="lb-title"></span>
+        <span class="lb-album"></span>
+      </div>
+      <div class="lb-strip"></div>
+    </div>
+  </dialog>
 </Layout>
+
+<script>
+  const grid = document.getElementById("gallery");
+  const dialog = document.querySelector<HTMLDialogElement>(".lightbox")!;
+  const img = dialog.querySelector("img")!;
+  const count = dialog.querySelector(".lb-count")!;
+  const title = dialog.querySelector(".lb-title")!;
+  const album = dialog.querySelector(".lb-album")!;
+  const strip = dialog.querySelector<HTMLElement>(".lb-strip")!;
+  let current: HTMLButtonElement | null = null;
+
+  const visible = () =>
+    [...(grid?.querySelectorAll<HTMLButtonElement>(".tile") ?? [])].filter((t) => !t.closest("li")!.hidden);
+
+  const show = (tile: HTMLButtonElement) => {
+    current = tile;
+    const list = visible();
+    const i = list.indexOf(tile);
+    img.src = tile.dataset.full!;
+    img.alt = tile.dataset.caption!;
+    title.textContent = tile.dataset.caption!;
+    album.textContent = tile.dataset.albumLabel ?? "";
+    count.textContent = `${String(i + 1).padStart(2, "0")} / ${String(list.length).padStart(2, "0")}${tile.dataset.albumLabel ? ` · ${tile.dataset.albumLabel}` : ""}`;
+    strip.replaceChildren(
+      ...list.map((t) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "lb-thumb";
+        b.style.backgroundImage = `url("${t.dataset.thumb}")`;
+        b.setAttribute("aria-label", `Bild: ${t.dataset.caption}`);
+        b.setAttribute("aria-current", String(t === tile));
+        b.addEventListener("click", () => show(t));
+        return b;
+      }),
+    );
+    strip.querySelector<HTMLElement>('[aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+    if (!dialog.open) dialog.showModal();
+  };
+
+  const step = (delta: number) => {
+    const list = visible();
+    if (!current || !list.length) return;
+    show(list[(list.indexOf(current) + delta + list.length) % list.length]);
+  };
+
+  grid?.addEventListener("click", (e) => {
+    const tile = (e.target as HTMLElement).closest<HTMLButtonElement>(".tile");
+    if (tile) show(tile);
+  });
+  dialog.querySelector("[data-lb-prev]")!.addEventListener("click", () => step(-1));
+  dialog.querySelector("[data-lb-next]")!.addEventListener("click", () => step(1));
+  dialog.querySelector("[data-lb-close]")!.addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => current?.focus());
+  dialog.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") step(-1);
+    if (e.key === "ArrowRight") step(1);
+  });
+
+  for (const pill of document.querySelectorAll<HTMLElement>("[data-album]")) {
+    if (pill.tagName !== "BUTTON") continue;
+    pill.addEventListener("click", () => {
+      const name = pill.dataset.album!;
+      for (const b of document.querySelectorAll("button[data-album]")) b.setAttribute("aria-pressed", String(b === pill));
+      for (const li of grid?.querySelectorAll<HTMLElement>("li") ?? []) li.hidden = Boolean(name) && li.dataset.album !== name;
+    });
+  }
+</script>
+
+<style>
+  .main {
+    padding-top: 32px;
+  }
+  .grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    grid-auto-rows: 210px;
+    grid-auto-flow: dense;
+    gap: 14px;
+  }
+  .grid li {
+    min-width: 0;
+  }
+  .grid li.tall {
+    grid-row: span 2;
+  }
+  .tile {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--soft-blue);
+    cursor: zoom-in;
+    color: var(--ink);
+  }
+  .tile :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .tile:hover :global(img) {
+    transform: scale(1.03);
+  }
+  .label {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: left;
+  }
+  .label-title {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .label-album {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .empty {
+    padding: 32px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    background: rgb(12 20 28 / 0.94);
+    color: #ffffff;
+    padding: clamp(12px, 2.5vw, 32px);
+  }
+  .lightbox[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .lightbox::backdrop {
+    background: transparent;
+  }
+  .lb-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .lb-count {
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: #dce3e8;
+  }
+  .lb-btn {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid #3a4a58;
+    background: transparent;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .lb-btn:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .lb-nav {
+    width: 52px;
+    height: 52px;
+  }
+  .lb-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 2vw, 24px);
+  }
+  .lb-frame {
+    flex: 1;
+    max-width: 1100px;
+    height: 100%;
+    max-height: 72vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lb-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 20px;
+    object-fit: contain;
+  }
+  .lb-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .lb-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lb-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+  }
+  .lb-album {
+    font-size: 14px;
+    color: #a9b6c1;
+  }
+  .lb-strip {
+    display: flex;
+    gap: 6px;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 2px;
+  }
+  .lb-strip :global(.lb-thumb) {
+    flex: 0 0 56px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    opacity: 0.6;
+  }
+  .lb-strip :global(.lb-thumb[aria-current="true"]) {
+    border-color: #ffffff;
+    opacity: 1;
+  }
+  @media (max-width: 600px) {
+    .lb-nav {
+      display: none;
+    }
+  }
+</style>

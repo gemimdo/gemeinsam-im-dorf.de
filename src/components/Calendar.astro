@@ -1,0 +1,632 @@
+---
+// Month calendar with a day panel. Every month of the fetched range is rendered
+// at build time; the client script only switches months, marks today and the
+// selected day, and applies category filters.
+import Icon from "./Icon.astro";
+import { buildMonths, eventsByDay, type EventView } from "../lib/events";
+import { MONTHS, MONTHS_SHORT } from "../lib/format";
+
+interface Props {
+  events: EventView[];
+  /** "compact": start page widget, "full": Termine page with chips, filters and list view */
+  variant?: "compact" | "full";
+}
+
+const { events, variant = "compact" } = Astro.props;
+const months = buildMonths();
+const byDay = eventsByDay(events);
+const full = variant === "full";
+const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const TitleTag = full ? "h2" : "h3";
+
+const dayLabel = (key: string) => {
+  const [y, m, d] = key.split("-").map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  const names = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+  const evs = byDay.get(key) ?? [];
+  const suffix = evs.length
+    ? full
+      ? `: ${evs.map((e) => e.title).join(", ")}`
+      : `, ${evs.length} Termin${evs.length > 1 ? "e" : ""}`
+    : "";
+  return `${names[wd]}, ${d}. ${MONTHS[m - 1]}${suffix}`;
+};
+const panelDays = [...byDay.keys()];
+---
+
+<div class:list={["cal", variant]} data-calendar>
+  <div class="cal-main">
+    <div class="cal-head">
+      <TitleTag class="cal-title" aria-live="polite" data-cal-title>{months[1]?.label}</TitleTag>
+      <div class="cal-nav">
+        {full && <button type="button" class="iconbtn today-btn" data-cal-today>Heute</button>}
+        <button type="button" class="iconbtn" data-cal-prev aria-label="Vorheriger Monat"><Icon name="chevron-left" /></button>
+        <button type="button" class="iconbtn" data-cal-next aria-label="Nächster Monat"><Icon name="chevron-right" /></button>
+      </div>
+    </div>
+    <div class="grid weekdays" aria-hidden="true">
+      {weekdays.map((w) => <span>{w}</span>)}
+    </div>
+    {
+      months.map((month, i) => (
+        <div class="grid month" data-month={month.key} data-label={month.label} hidden={i !== 1}>
+          {month.cells.map((cell) => {
+            const evs = byDay.get(cell.key) ?? [];
+            return (
+              <button
+                type="button"
+                class:list={["day", { out: !cell.inMonth }]}
+                data-day={cell.key}
+                aria-pressed="false"
+                aria-label={dayLabel(cell.key)}
+              >
+                <span class="num">{cell.day}</span>
+                {full &&
+                  evs.map((e) => (
+                    <span class={`chip cat-${e.category}`} data-cat={e.category}>
+                      <span class="dot" />
+                      {e.title}
+                    </span>
+                  ))}
+                <span class="dots">
+                  {evs.map((e) => (
+                    <span class={`dot cat-${e.category}`} data-cat={e.category} />
+                  ))}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ))
+    }
+  </div>
+
+  <aside class="cal-side" aria-label="Termine am gewählten Tag">
+    <div class="panel">
+      <p class="sel-label" data-sel-label></p>
+      {
+        panelDays.map((key) => (
+          <div class="panel-day" data-panel={key} hidden>
+            {(byDay.get(key) ?? []).map((e, j) => (
+              <div class={`entry cat-${e.category}`} data-cat={e.category}>
+                <span class="entry-cat">
+                  <span class="dot dark" />
+                  {e.categoryLabel}
+                </span>
+                <span class="entry-title">{e.title}</span>
+                {full ? (
+                  <>
+                    <span class="entry-meta">
+                      <Icon name="clock" size={16} />
+                      {e.timeLabel}
+                    </span>
+                    {e.location && (
+                      <span class="entry-meta">
+                        <Icon name="pin" size={16} />
+                        {e.location}
+                      </span>
+                    )}
+                    {e.description && <p class="entry-desc">{e.description}</p>}
+                    {(e.fee || e.contact) && (
+                      <dl class="facts">
+                        {e.fee && (
+                          <>
+                            <dt>Eintritt</dt>
+                            <dd>{e.fee}</dd>
+                          </>
+                        )}
+                        {e.contact && (
+                          <>
+                            <dt>Kontakt</dt>
+                            <dd>{e.contact}</dd>
+                          </>
+                        )}
+                      </dl>
+                    )}
+                    <a href={e.icsPath} class="btn btn-sm light-btn">
+                      In meinen Kalender
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <span class="entry-meta">
+                      {e.timeLabel}
+                      {e.location && ` · ${e.location}`}
+                    </span>
+                    <button
+                      type="button"
+                      class="btn btn-sm outline-btn"
+                      aria-expanded="false"
+                      aria-controls={`details-${key}-${j}`}
+                      data-details-toggle
+                    >
+                      <span data-label-closed>Details anzeigen</span>
+                      <span data-label-open hidden>
+                        Details schließen
+                      </span>
+                      <Icon name="chevron-down" size={16} class="chev" />
+                    </button>
+                    <div class="details" id={`details-${key}-${j}`} hidden>
+                      {e.description && <p class="entry-desc">{e.description}</p>}
+                      <dl class="facts">
+                        <dt>Wann</dt>
+                        <dd>{e.whenLong}</dd>
+                        {e.location && (
+                          <>
+                            <dt>Wo</dt>
+                            <dd>{e.location}</dd>
+                          </>
+                        )}
+                        {e.fee && (
+                          <>
+                            <dt>Eintritt</dt>
+                            <dd>{e.fee}</dd>
+                          </>
+                        )}
+                        {e.contact && (
+                          <>
+                            <dt>Kontakt</dt>
+                            <dd>{e.contact}</dd>
+                          </>
+                        )}
+                      </dl>
+                      <div class="detail-actions">
+                        <a href={e.icsPath} class="btn btn-sm light-btn">
+                          <Icon name="calendar" size={16} />
+                          In meinen Kalender
+                        </a>
+                        <a href="/termine/" class="btn btn-sm outline-btn">
+                          Alle Termine
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        ))
+      }
+      <p class="panel-empty" data-panel-empty hidden>
+        {
+          full
+            ? "Kein Termin an diesem Tag. Wählen Sie einen Tag mit Markierung."
+            : "An diesem Tag ist nichts geplant – genießen Sie die Ruhe."
+        }
+      </p>
+    </div>
+
+    {
+      !full && (
+        <div class="upcoming card">
+          <p class="upcoming-head">Als Nächstes</p>
+          {events.map((e) => (
+            <button type="button" class={`up cat-${e.category}`} data-upcoming={e.firstDay} data-end={e.end} hidden>
+              <span class="up-date">
+                <span class="up-day">{Number(e.firstDay.slice(8))}</span>
+                <span class="up-mon">{MONTHS_SHORT[Number(e.firstDay.slice(5, 7)) - 1]}</span>
+              </span>
+              <span class="up-bar" />
+              <span class="up-text">
+                <span class="up-title">{e.title}</span>
+                <span class="up-meta">
+                  {e.timeLabel}
+                  {e.location && ` · ${e.location}`}
+                </span>
+              </span>
+            </button>
+          ))}
+          <a href="/termine/" class="text-link">
+            Zum ganzen Kalender →
+          </a>
+        </div>
+      )
+    }
+  </aside>
+</div>
+
+<script>
+  import { initCalendars } from "../scripts/calendar";
+  initCalendars();
+</script>
+
+<style>
+  .cal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: stretch;
+  }
+  .cal.full {
+    align-items: flex-start;
+  }
+  .cal-main {
+    flex: 999 1 560px;
+    min-width: 0;
+    padding: clamp(16px, 2.4vw, 32px);
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .full .cal-main {
+    flex-basis: 680px;
+    padding: clamp(14px, 2vw, 28px);
+  }
+  .cal-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .cal-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .full .cal-title {
+    font-size: 30px;
+  }
+  .cal-nav {
+    display: flex;
+    gap: 8px;
+  }
+  .today-btn {
+    width: auto;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .weekdays span {
+    padding: 4px 0 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .full .weekdays span {
+    padding: 4px 6px 8px;
+    text-align: left;
+  }
+
+  .day {
+    min-height: clamp(48px, 6vw, 76px);
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid var(--line-soft);
+    background: var(--surface);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+    cursor: pointer;
+    text-align: left;
+    min-width: 0;
+  }
+  .day:hover {
+    border-color: var(--accent);
+  }
+  .day.out {
+    background: var(--bg);
+    color: var(--faint);
+  }
+  .num {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 7px;
+  }
+  .dots .dot {
+    width: 7px;
+    height: 7px;
+    box-shadow: 0 0 0 1.5px var(--surface);
+  }
+  /* compact: selected day is inverted, today gets an accent border */
+  .compact .day.today {
+    border-color: var(--accent);
+  }
+  .compact .day.today .num,
+  .compact .day[aria-pressed="true"] .num {
+    font-weight: 700;
+  }
+  .compact .day[aria-pressed="true"] {
+    background: var(--inverse-bg);
+    border-color: var(--inverse-bg);
+    color: var(--inverse-fg);
+  }
+  .compact .day[aria-pressed="true"] .dots .dot {
+    background: var(--inverse-fg);
+    box-shadow: 0 0 0 1.5px var(--inverse-bg);
+  }
+
+  /* full: number pill marks today / selection, chips list event titles */
+  .full .day {
+    min-height: clamp(56px, 8vw, 112px);
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .full .num {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    border-radius: 13px;
+    font-size: 14px;
+  }
+  .full .day[aria-pressed="true"] {
+    border-color: var(--ink);
+  }
+  .full .day[aria-pressed="true"] .num {
+    background: var(--inverse-bg);
+    color: var(--inverse-fg);
+    font-weight: 700;
+  }
+  .full .day.today .num {
+    background: var(--accent-bg);
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    background: var(--soft);
+    color: var(--soft-text);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip .dot {
+    width: 6px;
+    height: 6px;
+  }
+  .full .dots {
+    display: none;
+  }
+  @media (max-width: 640px) {
+    .full .chip {
+      display: none;
+    }
+    .full .dots {
+      display: flex;
+    }
+  }
+
+  .cal-side {
+    flex: 1 1 320px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .full .cal-side {
+    flex-basis: 300px;
+  }
+  .panel {
+    padding: 28px;
+    border-radius: 24px;
+    background: var(--panel);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .sel-label {
+    margin: 0;
+    font-size: 14px;
+    color: #a9b6c1;
+  }
+  .panel-day:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .entry {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #2c3b48;
+  }
+  .entry-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #a9b6c1;
+  }
+  .dot.dark {
+    width: 8px;
+    height: 8px;
+    background: var(--dot-dark);
+  }
+  .entry-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .full .entry-title {
+    font-size: 26px;
+    line-height: 1.15;
+  }
+  .entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: #dce3e8;
+  }
+  .entry-desc {
+    margin: 4px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #dce3e8;
+    white-space: pre-line;
+  }
+  .full .entry-desc {
+    color: #a9b6c1;
+  }
+  .outline-btn {
+    align-self: flex-start;
+    margin-top: 4px;
+    border-color: #3a4a58;
+    background: transparent;
+    color: #ffffff;
+  }
+  .outline-btn:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: #ffffff;
+  }
+  .light-btn {
+    align-self: flex-start;
+    background: #ffffff;
+    color: #13202b;
+  }
+  .light-btn:hover {
+    background: #e8eef3;
+    color: #13202b;
+  }
+  :global(.chev) {
+    transition: transform 0.2s ease;
+  }
+  [aria-expanded="true"] :global(.chev) {
+    transform: rotate(180deg);
+  }
+  .details:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 4px;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid #2c3b48;
+  }
+  .details .entry-desc {
+    margin: 0;
+  }
+  .facts {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 16px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .facts dt {
+    color: #a9b6c1;
+  }
+  .facts dd {
+    margin: 0;
+    color: #ffffff;
+  }
+  .detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .detail-actions .outline-btn {
+    margin-top: 0;
+  }
+  .panel-empty {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 22px;
+    line-height: 1.3;
+  }
+
+  .upcoming {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .upcoming-head {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .up {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 8px;
+    margin: 0 -8px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    min-height: 56px;
+  }
+  .up:hover {
+    background: var(--bg);
+  }
+  .up-date {
+    flex: 0 0 auto;
+    width: 46px;
+    text-align: center;
+    line-height: 1.05;
+  }
+  .up-day {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 20px;
+  }
+  .up-mon {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .up-bar {
+    width: 3px;
+    align-self: stretch;
+    border-radius: 2px;
+    background: var(--dot);
+  }
+  .up-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .up-title {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .up-meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .upcoming .text-link {
+    margin-top: 8px;
+  }
+</style>

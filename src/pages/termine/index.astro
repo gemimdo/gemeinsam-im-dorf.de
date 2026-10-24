@@ -1,0 +1,296 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHeader from "../../components/PageHeader.astro";
+import Calendar from "../../components/Calendar.astro";
+import Icon from "../../components/Icon.astro";
+import { getEvents } from "../../lib/events";
+import { env, publicIcsUrl } from "../../lib/google";
+import { MONTHS, MONTHS_SHORT, keyToUtc, WEEKDAYS_SHORT } from "../../lib/format";
+import { eventCategories, site } from "../../site.config";
+
+const events = await getEvents();
+const subscribeUrl = env.calendarId ? publicIcsUrl(env.calendarId).replace(/^https:/, "webcal:") : undefined;
+
+const groups = new Map<string, typeof events>();
+for (const e of events) {
+  const key = e.firstDay.slice(0, 7);
+  if (!groups.has(key)) groups.set(key, []);
+  groups.get(key)!.push(e);
+}
+const groupLabel = (key: string) => `${MONTHS[Number(key.slice(5)) - 1]} ${key.slice(0, 4)}`;
+---
+
+<Layout title="Termine" description={`Feste, Arbeitseinsätze und Vereinsabende in ${site.village}.`}>
+  <PageHeader
+    eyebrow="Kalender"
+    title="Termine im Dorf"
+    lead="Feste, Arbeitseinsätze und Vereinsabende – alles an einem Ort. Gäste sind überall willkommen, wenn nicht anders angegeben."
+    wave
+  >
+    <div class="header-actions" slot="actions">
+      {
+        subscribeUrl && (
+          <a href={subscribeUrl} class="btn btn-primary">
+            <Icon name="calendar" size={18} />
+            Kalender abonnieren
+          </a>
+        )
+      }
+      <a href={`mailto:${site.email}?subject=${encodeURIComponent("Terminvorschlag")}`} class="btn btn-ghost">Termin vorschlagen</a>
+    </div>
+  </PageHeader>
+
+  <main class="wrap main">
+    <div class="toolbar">
+      <div class="pill-group" role="group" aria-label="Kategorien filtern">
+        {
+          Object.entries(eventCategories).map(([key, cat]) => (
+            <button type="button" class={`pill cat-pill cat-${key}`} data-cat-filter={key} aria-pressed="true">
+              <span class="dot" />
+              {cat.label}
+            </button>
+          ))
+        }
+      </div>
+      <div class="views" role="group" aria-label="Ansicht">
+        <button type="button" data-view="month" aria-pressed="true">Monat</button>
+        <button type="button" data-view="list" aria-pressed="false">Liste</button>
+      </div>
+    </div>
+
+    <div data-view-panel="month">
+      <Calendar events={events} variant="full" />
+    </div>
+
+    <div class="list" data-view-panel="list" hidden>
+      {
+        [...groups].map(([key, items]) => (
+          <section class="group" data-group>
+            <h2 class="group-title">{groupLabel(key)}</h2>
+            <ul>
+              {items.map((e) => {
+                const d = keyToUtc(e.firstDay);
+                return (
+                  <li class={`row cat-${e.category}`} data-cat={e.category} data-end={e.end}>
+                    <span class="row-date">
+                      <span class="row-day">{d.getUTCDate()}</span>
+                      <span class="row-wd">
+                        {WEEKDAYS_SHORT[d.getUTCDay()]}, {MONTHS_SHORT[d.getUTCMonth()]}
+                      </span>
+                    </span>
+                    <span class="row-text">
+                      <span class="row-title">{e.title}</span>
+                      <span class="row-meta">
+                        {e.timeLabel}
+                        {e.location && ` · ${e.location}`}
+                      </span>
+                    </span>
+                    <span class="row-cat">
+                      <span class="dot" />
+                      {e.categoryLabel}
+                    </span>
+                    <a href={e.icsPath} class="row-ics" aria-label={`${e.title} in meinen Kalender`}>
+                      <Icon name="calendar" size={18} />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))
+      }
+      <p class="list-empty" data-list-empty hidden>Keine anstehenden Termine in den gewählten Kategorien.</p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { hiddenCategories } from "../../scripts/calendar";
+  const root = document.documentElement;
+
+  const refreshList = () => {
+    const now = Date.now();
+    let any = false;
+    for (const group of document.querySelectorAll<HTMLElement>("[data-group]")) {
+      const rows = [...group.querySelectorAll<HTMLElement>("[data-end]")];
+      rows.forEach((r) => (r.hidden = new Date(r.dataset.end!).getTime() < now));
+      const visible = rows.some((r) => !r.hidden && !root.classList.contains(`hide-cat-${r.dataset.cat}`));
+      group.hidden = !visible;
+      any ||= visible;
+    }
+    document.querySelector<HTMLElement>("[data-list-empty]")!.hidden = any;
+  };
+
+  for (const pill of document.querySelectorAll<HTMLElement>("[data-cat-filter]")) {
+    pill.addEventListener("click", () => {
+      const cat = pill.dataset.catFilter!;
+      const on = pill.getAttribute("aria-pressed") !== "true";
+      pill.setAttribute("aria-pressed", String(on));
+      root.classList.toggle(`hide-cat-${cat}`, !on);
+      if (on) hiddenCategories.delete(cat);
+      else hiddenCategories.add(cat);
+      document.dispatchEvent(new CustomEvent("calendar:filter"));
+      refreshList();
+    });
+  }
+
+  for (const button of document.querySelectorAll<HTMLElement>("[data-view]")) {
+    button.addEventListener("click", () => {
+      for (const b of document.querySelectorAll("[data-view]")) b.setAttribute("aria-pressed", String(b === button));
+      for (const panel of document.querySelectorAll<HTMLElement>("[data-view-panel]")) {
+        panel.hidden = panel.dataset.viewPanel !== button.dataset.view;
+      }
+    });
+  }
+
+  refreshList();
+</script>
+
+<style>
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .main {
+    padding-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .views {
+    display: flex;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--line-soft);
+    gap: 4px;
+  }
+  .views button {
+    min-height: 40px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .views button[aria-pressed="true"] {
+    background: var(--surface);
+  }
+  .list:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .group:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .group-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .group ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .row:last-child {
+    border-bottom: 0;
+  }
+  .row:hover {
+    background: var(--bg);
+  }
+  .row-date {
+    flex: 0 0 64px;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+  .row-day {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+  }
+  .row-wd {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .row-text {
+    flex: 1 1 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .row-title {
+    font-weight: 600;
+    font-size: 18px;
+  }
+  .row-meta {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .row-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--soft);
+    color: var(--soft-text);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .row-cat .dot {
+    width: 8px;
+    height: 8px;
+  }
+  .row-ics {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .row-ics:hover {
+    background: var(--line-soft);
+    color: var(--ink);
+  }
+  .list-empty {
+    margin: 0;
+    padding: 32px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    color: var(--muted);
+    text-align: center;
+  }
+</style>

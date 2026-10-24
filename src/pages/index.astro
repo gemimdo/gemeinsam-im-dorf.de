@@ -1,70 +1,243 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
-import EventList from "../components/EventList.astro";
-import PhotoGrid from "../components/PhotoGrid.astro";
+import Hero from "../components/home/Hero.astro";
+import Flyer from "../components/home/Flyer.astro";
+import PhotoCarousel from "../components/home/PhotoCarousel.astro";
+import Calendar from "../components/Calendar.astro";
+import Icon from "../components/Icon.astro";
+import { getEvents } from "../lib/events";
+import { eventCategories } from "../site.config";
+import { site } from "../site.config";
+import { fileTypeLabel } from "../lib/format";
 
-const now = Date.now();
-const upcoming = (await getCollection("events"))
-  .filter((e) => new Date(e.data.end).getTime() >= now)
-  .sort((a, b) => new Date(a.data.start).getTime() - new Date(b.data.start).getTime())
-  .slice(0, 4);
-const latestPhotos = (await getCollection("photos"))
-  .sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime())
-  .slice(0, 8);
+const events = await getEvents();
+const photos = (await getCollection("photos")).sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime());
+const heroPhotos = photos.filter((p) => p.data.isHero);
+const latestPhotos = photos.filter((p) => !p.data.isHero).slice(0, 6);
+
+const documents = await getCollection("documents");
+const flyer = documents
+  .filter((d) => d.data.isFlyer)
+  .sort((a, b) => b.data.createdAt.getTime() - a.data.createdAt.getTime())[0];
+const featuredDocs = documents
+  .filter((d) => !d.data.isFlyer)
+  .sort((a, b) => b.data.modifiedAt.getTime() - a.data.modifiedAt.getTime())
+  .slice(0, 3);
 ---
 
-<Layout>
-  <section class="hero">
-    <h1>Gemeinsam im Dorf</h1>
-    <p class="lead">Was bei uns los ist: Termine, Fotos und alles Wichtige an einem Ort.</p>
-  </section>
+<Layout description={`${site.clubName}: Feste, Arbeitseinsätze und Zusammenhalt in ${site.village}.`}>
+  <main>
+    <Hero photos={heroPhotos} events={events} />
 
-  <section>
-    <div class="section-head">
-      <h2>Nächste Termine</h2>
-      <a href="/kalender/">Alle Termine →</a>
-    </div>
-    <EventList events={upcoming} groupByMonth={false} />
-  </section>
+    {flyer && <Flyer flyer={flyer} />}
 
-  <section>
-    <div class="section-head">
-      <h2>Neueste Fotos</h2>
-      <a href="/galerie/">Zur Galerie →</a>
-    </div>
-    <PhotoGrid photos={latestPhotos} id="latest-photos" />
-  </section>
+    <section id="termine" class="wrap section stack" aria-labelledby="cal-title">
+      <div class="section-head">
+        <div class="heading">
+          <p class="eyebrow">Kalender</p>
+          <h2 id="cal-title" class="display h2">Was ist los in {site.village}?</h2>
+        </div>
+        <div class="legend">
+          {
+            Object.entries(eventCategories).map(([key, cat]) => (
+              <span class={`legend-item cat-${key}`}>
+                <span class="dot" />
+                {cat.label}
+              </span>
+            ))
+          }
+        </div>
+      </div>
+      <Calendar events={events} variant="compact" />
+    </section>
 
-  <section class="docs-teaser">
-    <h2>Dokumente</h2>
-    <p>Protokolle, Formulare und Infos findest du in unserer Dokumentensammlung.</p>
-    <a class="button" href="/dokumente/">Dokumente ansehen</a>
-  </section>
+    {
+      latestPhotos.length > 0 && (
+        <section class="wrap section stack" aria-labelledby="gal-title">
+          <div class="section-head">
+            <div class="heading">
+              <p class="eyebrow">Galerie</p>
+              <h2 id="gal-title" class="display h2">
+                Momente aus dem Dorfleben
+              </h2>
+            </div>
+            <a href="/galerie/" class="text-link big">
+              Alle Alben →
+            </a>
+          </div>
+          <PhotoCarousel photos={latestPhotos} />
+        </section>
+      )
+    }
+
+    <section class="wrap section" aria-labelledby="about-title">
+      <div class="duo">
+        <div class="about card">
+          <p class="eyebrow">Der Verein</p>
+          <h2 id="about-title" class="display h2-sm">Ein Verein für alle, die hier zu Hause sind.</h2>
+          <p class="body">
+            Seit {site.founded} organisiert der {site.clubName} Feste, pflegt Dorfanger und Teich und gibt Neuzugezogenen
+            einen leichten Start. Getragen wird alles vom Ehrenamt.
+          </p>
+          <dl class="stats">
+            <div><dt>gegründet</dt><dd>{site.founded}</dd></div>
+            <div><dt>Mitglieder</dt><dd>{site.members}</dd></div>
+            <div><dt>Jahresbeitrag</dt><dd>{site.annualFee}</dd></div>
+          </dl>
+          <a href="/verein/" class="btn btn-ghost about-btn">Verein &amp; Dorf kennenlernen</a>
+        </div>
+        <div class="docs">
+          <p class="eyebrow docs-eyebrow">Dokumente</p>
+          <h2 class="display h2-sm">Satzung, Formulare &amp; Protokolle</h2>
+          {
+            featuredDocs.length > 0 && (
+              <ul>
+                {featuredDocs.map((d) => (
+                  <li>
+                    <a href={`/dokumente/dateien/${d.data.fileName}`} class="doc-link" download>
+                      <Icon name="file" size={22} strokeWidth={1.8} />
+                      <span class="doc-title">{d.data.title}</span>
+                      <span class="doc-type">{fileTypeLabel(d.data.ext)}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+          <a href="/dokumente/" class="text-link docs-link">Alle Dokumente →</a>
+        </div>
+      </div>
+    </section>
+  </main>
 </Layout>
 
 <style>
-  .hero {
-    padding-block: 1rem 0.5rem;
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
   }
   .section-head {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
     flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
   }
-  .section-head a {
+  .heading {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .text-link.big {
+    font-size: 16px;
+    padding: 12px 0;
+    align-self: auto;
+  }
+  .duo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+    gap: 20px;
+  }
+  .about,
+  .docs {
+    padding: clamp(28px, 4vw, 56px);
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .body {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .stats {
+    margin: 8px 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+  }
+  .stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+  }
+  .stats dt {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .stats dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 24px;
+  }
+  .about-btn {
+    align-self: flex-start;
+    min-height: 48px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+  .docs {
+    background: var(--soft-blue);
+  }
+  .docs-eyebrow,
+  .docs-link {
+    color: var(--soft-blue-text);
+  }
+  .docs ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .doc-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 60px;
+    padding: 0 18px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid transparent;
     text-decoration: none;
-    font-weight: 500;
+    color: var(--ink);
   }
-  .docs-teaser {
-    margin-top: 3rem;
-    padding: 1.5rem;
-    background: var(--accent-soft);
-    border-radius: var(--radius);
+  .doc-link:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
   }
-  .docs-teaser h2 {
-    margin-top: 0;
+  .doc-link :global(svg) {
+    color: var(--accent);
+    flex: 0 0 auto;
+  }
+  .doc-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .doc-type {
+    font-size: 13px;
+    color: var(--muted);
   }
 </style>
