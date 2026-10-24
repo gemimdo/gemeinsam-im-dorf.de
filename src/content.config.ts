@@ -4,6 +4,7 @@ import {
   GOOGLE_EXPORTABLE,
   driveDownloadUrl,
   driveExportPdfUrl,
+  calendarRange,
   env,
   listCalendarEvents,
   walkDriveFolder,
@@ -115,9 +116,7 @@ const events = defineCollection({
     const { apiKey, calendarId } = env;
     if (!apiKey || !calendarId) return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_ID");
 
-    const now = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const to = new Date(now.getFullYear() + 1, now.getMonth() + 1, 1);
+    const { from, to } = calendarRange();
     const items = await listCalendarEvents(calendarId, apiKey, from, to);
 
     return items.map((e) => {

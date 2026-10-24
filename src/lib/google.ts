@@ -14,7 +14,8 @@ export const env = {
 };
 
 function read(name: string): string | undefined {
-  return import.meta.env[name] || process.env[name] || undefined;
+  // import.meta.env only exists inside Astro/Vite; plain scripts (scripts/) use process.env.
+  return import.meta.env?.[name] || process.env[name] || undefined;
 }
 
 export interface DriveFile {
@@ -125,6 +126,14 @@ export async function listCalendarEvents(
     pageToken = page.nextPageToken;
   } while (pageToken);
   return events;
+}
+
+/** One month back to twelve months ahead – what the site shows and what the change check watches. */
+export function calendarRange(now = new Date()) {
+  return {
+    from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+    to: new Date(now.getFullYear() + 1, now.getMonth() + 1, 1),
+  };
 }
 
 export function publicIcsUrl(calendarId: string): string {

@@ -1,0 +1,106 @@
+# Rebuilds the site from Google Calendar/Drive and uploads it to Strato.
+# Runs every 30 minutes, but only builds when the Google content (or the code) changed.
+# "Run workflow" in the Actions tab publishes right away; tick "force" to rebuild without changes.
+
+name: Website aktualisieren
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Auch ohne Änderungen neu bauen
+        type: boolean
+        default: false
+
+# Never run two uploads at the same time; a queued run waits for the current one.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
+      DRIVE_PHOTOS_FOLDER_ID: ${{ secrets.DRIVE_PHOTOS_FOLDER_ID }}
+      DRIVE_DOCUMENTS_FOLDER_ID: ${{ secrets.DRIVE_DOCUMENTS_FOLDER_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: bun install --frozen-lockfile
+
+      # Fingerprint of the Google content plus the code version.
+      - id: fingerprint
+        run: echo "hash=$(bun scripts/content-fingerprint.ts)-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      # A cache entry with this exact key exists only if this state was already deployed.
+      - id: deployed
+        uses: actions/cache/restore@v6
+        with:
+          path: .deployed
+          key: deployed-${{ steps.fingerprint.outputs.hash }}
+          lookup-only: true
+
+      - id: decide
+        run: |
+          if [ "${{ steps.deployed.outputs.cache-hit }}" = "true" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "Nothing changed since the last upload – skipping."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Optimized images from earlier runs, so photos aren't downloaded and converted every time.
+      - if: steps.decide.outputs.build == 'true'
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.astro
+          key: astro-${{ github.run_id }}
+          restore-keys: astro-
+
+      - if: steps.decide.outputs.build == 'true'
+        run: bun run build
+
+      - if: steps.decide.outputs.build == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      # SFTP_REMOTE_DIR must be a folder that only contains this website:
+      # files there that are not part of the build get deleted (except .htaccess).
+      # _astro/ holds content-hashed files, so comparing sizes is enough there;
+      # everything else is uploaded in full.
+      - if: steps.decide.outputs.build == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_REMOTE_DIR: ${{ secrets.SFTP_REMOTE_DIR }}
+        run: |
+          lftp -c "
+            set sftp:auto-confirm yes;
+            set net:max-retries 3;
+            open --env-password -u \"$SFTP_USER\" sftp://$SFTP_HOST;
+            mkdir -p -f \"$SFTP_REMOTE_DIR\";
+            mirror --reverse --delete --ignore-time --parallel=4 dist/_astro \"$SFTP_REMOTE_DIR/_astro\";
+            mirror --reverse --delete --parallel=4 --exclude-glob .htaccess --exclude _astro/ dist \"$SFTP_REMOTE_DIR\";
+          "
+
+      - if: steps.decide.outputs.build == 'true'
+        run: mkdir -p .deployed && echo "${{ steps.fingerprint.outputs.hash }}" > .deployed/hash
+
+      - if: steps.decide.outputs.build == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .deployed
+          key: deployed-${{ steps.fingerprint.outputs.hash }}

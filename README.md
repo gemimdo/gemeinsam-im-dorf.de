@@ -68,6 +68,30 @@ bun run check    # type check
 
 Without `.env` the site still builds, just with empty calendar, gallery and documents.
 
+## Automatic publishing (GitHub Actions → Strato)
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs every 30 minutes. It first
+computes a fingerprint of the Google content ([`scripts/content-fingerprint.ts`](scripts/content-fingerprint.ts))
+and only builds and uploads when something changed (or new code was pushed). It also rebuilds
+once a day, because the calendar shows a rolling range of months. Changes in Google therefore
+appear on the site within about 30–40 minutes. "Run workflow" in the repository's Actions tab
+publishes immediately.
+
+One-time setup in the GitHub repository → *Settings → Secrets and variables → Actions*:
+
+| Secret | Value |
+|---|---|
+| `GOOGLE_API_KEY`, `GOOGLE_CALENDAR_ID`, `DRIVE_PHOTOS_FOLDER_ID`, `DRIVE_DOCUMENTS_FOLDER_ID` | same as in `.env` |
+| `SFTP_HOST` | Strato SFTP server, e.g. `ssh.strato.de` |
+| `SFTP_USER`, `SFTP_PASSWORD` | Strato SFTP login |
+| `SFTP_REMOTE_DIR` | folder on the webspace the domain points to, e.g. `/gemeinsam-im-dorf` |
+
+`SFTP_REMOTE_DIR` must contain only this website: files there that are not part of the build
+are deleted on upload (`.htaccess` is kept).
+
+Costs: in a public repository GitHub Actions is free. In a private one, each check counts as at
+least one minute, which is about 1,450 of the 2,000 free minutes per month.
+
 ## Not covered by a static site
 
 - **Contact form** (`/verein/#mitglied`) opens the visitor's mail program with the message
