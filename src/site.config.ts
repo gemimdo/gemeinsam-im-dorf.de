@@ -2,15 +2,15 @@
 // placeholders from the design and still need real content.
 
 export const site = {
-  clubName: "[Vereinsname]",
-  village: "[Dorfname]",
-  legalForm: "e. V.",
+  clubName: "Gemeinsam Im Dorf",
+  village: "Rockau",
+  legalForm: "e.V.",
   founded: "[Gründungsjahr]",
   members: "[Anzahl]",
   annualFee: "[Betrag]",
   childFee: "[beitragsfrei / Betrag]",
 
-  address: { street: "[Straße Nr.]", zip: "[PLZ]", city: "[Dorfname]" },
+  address: { street: "[Straße Nr.]", zip: "[PLZ]", city: "Rockau" },
   email: "[kontakt@verein.de]",
   phone: "[Telefonnummer]",
 
