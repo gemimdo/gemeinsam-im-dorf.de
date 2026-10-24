@@ -17,7 +17,7 @@ const icsUrl = env.calendarId ? publicIcsUrl(env.calendarId).replace(/^https:/, 
       <div class="col">
         <span class="head">Kontakt</span>
         <a href={`mailto:${site.email}`}>{site.email}</a>
-        <span class="soft">{site.phone}</span>
+        <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
       </div>
       <nav aria-label="Fußnavigation" class="col">
         <span class="head">Seiten</span>

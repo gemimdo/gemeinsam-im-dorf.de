@@ -12,6 +12,6 @@ import { site } from "../../site.config";
   </p>
   <p>[Vertreten durch den Vorstand · Registergericht · Registernummer]</p>
   <h2>Kontakt</h2>
-  <p>E-Mail: {site.email}<br />Telefon: {site.phone}</p>
+  <p>E-Mail: <a href={`mailto:${site.email}`}>{site.email}</a><br />Telefon: <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a></p>
   <p>[Platzhalter – der vollständige Impressumstext muss vom Verein ergänzt werden.]</p>
 </LegalPage>

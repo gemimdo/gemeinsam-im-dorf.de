@@ -10,9 +10,9 @@ export const site = {
   annualFee: "24 €",
   reducedFee: "12 €",
 
-  address: { street: "[Straße Nr.]", zip: "[PLZ]", city: "Rockau" },
-  email: "[kontakt@verein.de]",
-  phone: "[Telefonnummer]",
+  address: { street: "Rockau 51", zip: "07619", city: "Schkölen" },
+  email: "gemimdo@yahoo.com",
+  phone: "0176 64103757",
 
   board: [
     { name: "[Vorname Nachname]", role: "1. Vorsitz" },
