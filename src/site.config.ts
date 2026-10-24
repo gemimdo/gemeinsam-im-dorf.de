@@ -5,10 +5,10 @@ export const site = {
   clubName: "Gemeinsam Im Dorf",
   village: "Rockau",
   legalForm: "e.V.",
-  founded: "[Gründungsjahr]",
-  members: "[Anzahl]",
-  annualFee: "[Betrag]",
-  childFee: "[beitragsfrei / Betrag]",
+  founded: "2025",
+  members: "über 10",
+  annualFee: "24 €",
+  reducedFee: "12 €",
 
   address: { street: "[Straße Nr.]", zip: "[PLZ]", city: "Rockau" },
   email: "[kontakt@verein.de]",
@@ -29,7 +29,7 @@ export const site = {
     district: "[Kreis]",
     timeline: [
       { year: "[Jahr]", text: "[Erste urkundliche Erwähnung]" },
-      { year: "[Jahr]", text: "[Gründung des Vereins]" },
+      { year: "2025", text: "Gründung des Vereins „Gemeinsam Im Dorf e.V.“" },
       { year: "[Jahr]", text: "[Weiteres Ereignis der Dorfgeschichte]" },
     ],
     // Shown as a link only – an embedded map would load third-party content.

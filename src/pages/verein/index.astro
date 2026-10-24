@@ -18,14 +18,14 @@ const activities: { icon: IconName; title: string; text: string }[] = [
 const { villageFacts: village } = site;
 ---
 
-<Layout title="Verein & Dorf" description={`Wer wir sind: der ${site.clubName} und ${site.village}.`}>
+<Layout title="Verein & Dorf" description={`Wer wir sind: der Verein „${site.clubName}“ und ${site.village}.`}>
   <section class="intro-section" aria-labelledby="page-title">
     <div class="wrap intro-grid">
       <div class="intro-text">
         <p class="eyebrow with-line">Verein &amp; Dorf</p>
         <h1 id="page-title" class="display h1">Wer wir sind und wo wir leben.</h1>
         <p class="lead narrow">
-          Der {site.clubName} ist der Treffpunkt für alle in {site.village} – Alteingesessene, Neuzugezogene, Familien und
+          Der Verein „{site.clubName}“ ist der Treffpunkt für alle in {site.village} – Alteingesessene, Neuzugezogene, Familien und
           Feierabend-Gärtner.
         </p>
         <nav aria-label="Auf dieser Seite" class="jump">
@@ -51,7 +51,7 @@ const { villageFacts: village } = site;
       <div class="prose">
         <h2 id="verein-title" class="display h2">Der Verein</h2>
         <p>
-          Seit {site.founded} bringt der {site.clubName} Menschen in {site.village} zusammen. Wir sind gemeinnützig,
+          Seit {site.founded} bringt der Verein „{site.clubName}“ Menschen in {site.village} zusammen. Wir sind gemeinnützig,
           parteipolitisch neutral und offen für alle, die sich für {site.village} einsetzen möchten.
         </p>
         <p>[Weiterer Absatz zur Vereinsgeschichte, zu Partnern und dem, was den Verein besonders macht.]</p>
@@ -136,7 +136,7 @@ const { villageFacts: village } = site;
         <div class="join-text">
           <h2 id="mitglied-title" class="display join-title">Mitglied werden</h2>
           <p>
-            Der Jahresbeitrag beträgt {site.annualFee} für Erwachsene, Kinder und Jugendliche sind {site.childFee}. Jede
+            Der Jahresbeitrag beträgt {site.annualFee}, ermäßigt {site.reducedFee}. Jede
             Mitgliedschaft hilft, Feste und Dorfpflege zu stemmen.
           </p>
           <ol class="steps">
