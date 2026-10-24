@@ -1,6 +1,6 @@
 ---
 import type { CollectionEntry } from "astro:content";
-import { getImage, inferRemoteSize } from "astro:assets";
+import { getImage } from "astro:assets";
 import Icon from "../Icon.astro";
 import { formatDate } from "../../lib/format";
 
@@ -13,22 +13,16 @@ const { data } = flyer;
 const fileUrl = `/dokumente/dateien/${data.fileName}`;
 const isImage = data.mimeType.startsWith("image/");
 
-// Preview: the flyer itself if it is an image, otherwise Drive's rendered first page.
+// Preview: the flyer itself if it is an image, otherwise Drive's rendered first page
+// (both downloaded once by the documents loader).
 let preview: { src: string; jpg: string } | undefined;
-const previewSource = isImage ? data.source : data.thumbnail;
-if (previewSource) {
-  try {
-    const { width, height } = await inferRemoteSize(previewSource);
-    const w = Math.min(1400, width);
-    const dims = { width: w, height: Math.round((height * w) / width) };
-    const [webp, jpg] = await Promise.all([
-      getImage({ src: previewSource, ...dims, format: "webp", quality: 85 }),
-      getImage({ src: previewSource, ...dims, format: "jpg", quality: 88 }),
-    ]);
-    preview = { src: webp.src, jpg: jpg.src };
-  } catch (error) {
-    console.warn(`[flyer] no preview image for "${data.title}": ${(error as Error).message}`);
-  }
+if (data.preview) {
+  const width = Math.min(1400, data.preview.width);
+  const [webp, jpg] = await Promise.all([
+    getImage({ src: data.preview, width, format: "webp", quality: 85 }),
+    getImage({ src: data.preview, width, format: "jpg", quality: 88 }),
+  ]);
+  preview = { src: webp.src, jpg: jpg.src };
 }
 const posted = formatDate(data.createdAt);
 ---

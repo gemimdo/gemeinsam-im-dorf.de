@@ -14,8 +14,6 @@ interface Props {
 
 const { photos, events } = Astro.props;
 const caption = (p: CollectionEntry<"photos">) => p.data.description ?? p.data.name;
-const size = (p: CollectionEntry<"photos">) =>
-  p.data.width && p.data.height ? { width: p.data.width, height: p.data.height } : { inferSize: true as const };
 const multiple = photos.length > 1;
 // Candidates for the "Nächster Termin" card; the script picks the first one that hasn't ended.
 const nextCandidates = events.slice(0, 12);
@@ -28,8 +26,7 @@ const nextCandidates = events.slice(0, 12);
         photos.map((p, i) => (
           <div class:list={["layer", { "is-active": i === 0 }]} data-slide data-caption={caption(p)}>
             <Image
-              src={p.data.src}
-              {...size(p)}
+              src={p.data.image}
               alt=""
               widths={[960, 1440, 1920, 2560]}
               sizes="100vw"

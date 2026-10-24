@@ -68,6 +68,10 @@ bun run check    # type check
 
 Without `.env` the site still builds, just with empty calendar, gallery and documents.
 
+Drive files are downloaded once into `.cache/drive/` (not in git) and only fetched again when
+they change in Drive. Deleting that folder forces a fresh download. Google throttles repeated
+downloads; when its API download is blocked, the cache falls back to Drive's public download link.
+
 ## Automatic publishing (GitHub Actions → Strato)
 
 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs every 30 minutes. It first

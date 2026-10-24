@@ -16,20 +16,13 @@ const photos = (await getCollection("photos"))
 const albums = [...new Set(photos.map((p) => p.data.album).filter(Boolean))];
 
 const caption = (p: Photo) => p.data.description ?? p.data.name;
-const dims = (p: Photo, width: number) =>
-  p.data.width && p.data.height
-    ? { width: Math.min(width, p.data.width), height: Math.round((p.data.height * Math.min(width, p.data.width)) / p.data.width) }
-    : { inferSize: true as const };
-const original = (p: Photo) =>
-  p.data.width && p.data.height ? { width: p.data.width, height: p.data.height } : { inferSize: true as const };
-
 const items = await Promise.all(
   photos.map(async (p) => {
     const [full, thumb] = await Promise.all([
-      getImage({ src: p.data.src, ...dims(p, 1800), format: "webp", quality: 82 }),
-      getImage({ src: p.data.src, ...dims(p, 160), format: "webp", quality: 60 }),
+      getImage({ src: p.data.image, width: Math.min(1800, p.data.image.width), format: "webp", quality: 82 }),
+      getImage({ src: p.data.image, width: 160, format: "webp", quality: 60 }),
     ]);
-    const portrait = Boolean(p.data.width && p.data.height && p.data.height > p.data.width * 1.1);
+    const portrait = p.data.image.height > p.data.image.width * 1.1;
     return { p, full: full.src, thumb: thumb.src, portrait };
   }),
 );
@@ -79,8 +72,7 @@ const items = await Promise.all(
                 aria-label={`Bild öffnen: ${caption(p)}`}
               >
                 <Image
-                  src={p.data.src}
-                  {...original(p)}
+                  src={p.data.image}
                   alt={caption(p)}
                   widths={[400, 640, 960]}
                   sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 400px"

@@ -62,11 +62,14 @@ jobs:
             echo "build=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Optimized images from earlier runs, so photos aren't downloaded and converted every time.
+      # Drive downloads and optimized images from earlier runs, so unchanged photos
+      # are neither downloaded from Google nor converted again.
       - if: steps.decide.outputs.build == 'true'
         uses: actions/cache@v6
         with:
-          path: node_modules/.astro
+          path: |
+            .cache/drive
+            node_modules/.astro
           key: astro-${{ github.run_id }}
           restore-keys: astro-
 

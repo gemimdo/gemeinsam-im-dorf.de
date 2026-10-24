@@ -1,9 +1,12 @@
+import path from "node:path";
 import { defineCollection } from "astro:content";
+import type { Loader } from "astro/loaders";
 import { z } from "astro/zod";
+import { cachedDriveFile } from "./lib/drive-cache";
 import {
   GOOGLE_EXPORTABLE,
   driveDownloadUrl,
-  driveExportPdfUrl,
+  drivePublicDownloadUrl,
   calendarRange,
   env,
   listCalendarEvents,
@@ -12,151 +15,234 @@ import {
 import { defaultEventCategory, driveFolders, eventColorToCategory } from "./site.config";
 
 // Formats Astro's image pipeline (sharp) can process. HEIC from iPhones is not among them.
-const SUPPORTED_IMAGES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/tiff"]);
+const IMAGE_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+  "image/tiff": "tiff",
+};
 
-/**
- * In the dev server a Google error only empties that section, so the rest of the site
- * stays usable. A real build fails instead – the scheduled upload must never publish
- * a site with a missing calendar or gallery.
- */
-async function guarded<T>(collection: string, load: () => Promise<T[]>): Promise<T[]> {
-  try {
-    return await load();
-  } catch (error) {
-    if (!import.meta.env.DEV) throw error;
-    console.warn(
-      `[${collection}] ${(error as Error).message}\n[${collection}] dev server continues with this section empty.`,
-    );
-    return [];
-  }
+interface StoredEntry {
+  id: string;
+  data: Record<string, unknown>;
+  /** Set when data contains an image path; image() resolves "./name" next to this file. */
+  filePath?: string;
+  digest: string;
 }
 
-function missing(collection: string, ...vars: string[]) {
+/**
+ * Wraps a Google-backed loader. In the dev server a Google error keeps the previously
+ * loaded entries, so the site stays usable. A real build fails instead – the scheduled
+ * upload must never publish a site with a missing calendar or gallery.
+ */
+function googleLoader(name: string, load: () => Promise<StoredEntry[]>): Loader {
+  return {
+    name,
+    load: async ({ store, parseData }) => {
+      let entries: StoredEntry[];
+      try {
+        entries = await load();
+      } catch (error) {
+        if (!import.meta.env.DEV) throw error;
+        console.warn(`[${name}] ${(error as Error).message}\n[${name}] dev server keeps the last loaded data.`);
+        return;
+      }
+      store.clear();
+      for (const entry of entries) {
+        const data = await parseData({ id: entry.id, data: entry.data, filePath: entry.filePath });
+        store.set({ id: entry.id, data, filePath: entry.filePath, digest: entry.digest });
+      }
+    },
+  };
+}
+
+function missing(collection: string, ...vars: string[]): StoredEntry[] {
   console.warn(`[${collection}] ${vars.join(", ")} not set – collection stays empty.`);
   return [];
 }
 
+/** Path relative to the project root plus the "./file" form image() expects next to it. */
+function localImage(absPath: string) {
+  return { filePath: path.relative(process.cwd(), absPath), image: `./${path.basename(absPath)}` };
+}
+
+/**
+ * A failed download skips that file in the dev server; a build stops, so a half-downloaded
+ * gallery never goes online.
+ */
+async function tryDownload<T>(label: string, task: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await task();
+  } catch (error) {
+    if (!import.meta.env.DEV) throw error;
+    console.warn(`[${label}] ${(error as Error).message} – skipped for now.`);
+    return undefined;
+  }
+}
+
 const photos = defineCollection({
-  loader: () =>
-    guarded("photos", async () => {
-      const { apiKey, photosFolderId } = env;
-      if (!apiKey || !photosFolderId) return missing("photos", "GOOGLE_API_KEY", "DRIVE_PHOTOS_FOLDER_ID");
+  loader: googleLoader("photos", async () => {
+    const { apiKey, photosFolderId } = env;
+    if (!apiKey || !photosFolderId) return missing("photos", "GOOGLE_API_KEY", "DRIVE_PHOTOS_FOLDER_ID");
 
-      const files = await walkDriveFolder(photosFolderId, apiKey);
-      const skipped = files.filter((f) => !SUPPORTED_IMAGES.has(f.mimeType));
-      if (skipped.length) {
-        console.warn(
-          `[photos] skipped ${skipped.length} unsupported file(s): ${skipped.map((f) => f.name).join(", ")}`,
-        );
-      }
+    const files = await walkDriveFolder(photosFolderId, apiKey);
+    const skipped = files.filter((f) => !IMAGE_EXT[f.mimeType]);
+    if (skipped.length) {
+      console.warn(`[photos] skipped ${skipped.length} unsupported file(s): ${skipped.map((f) => f.name).join(", ")}`);
+    }
 
-      return files
-        .filter((f) => SUPPORTED_IMAGES.has(f.mimeType))
-        .map((f) => {
-          const meta = f.imageMediaMetadata ?? {};
-          const rotated = meta.rotation === 1 || meta.rotation === 3;
+    const entries = await Promise.all(
+      files
+        .filter((f) => IMAGE_EXT[f.mimeType])
+        .map(async (f): Promise<StoredEntry | undefined> => {
+          const local = await tryDownload("photos", () =>
+            cachedDriveFile({
+              id: f.id,
+              version: f.modifiedTime,
+              ext: IMAGE_EXT[f.mimeType],
+              url: () => driveDownloadUrl(f.id, apiKey),
+              fallbackUrl: drivePublicDownloadUrl(f.id),
+            }),
+          );
+          if (!local) return undefined;
+          const { filePath, image } = localImage(local);
           return {
             id: f.id,
-            name: f.name.replace(/\.[^.]+$/, ""),
-            description: f.description,
-            src: driveDownloadUrl(f.id, apiKey),
-            width: rotated ? meta.height : meta.width,
-            height: rotated ? meta.width : meta.height,
-            takenAt: parseExifTime(meta.time) ?? f.modifiedTime,
-            // The top-level subfolder is the album; deeper folders only add tags.
-            album: f.tags[0] ?? "",
-            isHero: f.tags[0] === driveFolders.heroPhotos,
-            tags: f.tags,
+            filePath,
+            digest: f.modifiedTime + (f.description ?? "") + f.tags.join("/"),
+            data: {
+              name: f.name.replace(/\.[^.]+$/, ""),
+              description: f.description,
+              image,
+              takenAt: parseExifTime(f.imageMediaMetadata?.time) ?? f.modifiedTime,
+              // The top-level subfolder is the album; deeper folders only add tags.
+              album: f.tags[0] ?? "",
+              isHero: f.tags[0] === driveFolders.heroPhotos,
+              tags: f.tags,
+            },
           };
-        });
-    }),
-  schema: z.object({
-    name: z.string(),
-    description: z.string().optional(),
-    src: z.url(),
-    width: z.number().optional(),
-    height: z.number().optional(),
-    takenAt: z.coerce.date(),
-    album: z.string(),
-    isHero: z.boolean(),
-    tags: z.array(z.string()),
+        }),
+    );
+    return entries.filter((e) => e !== undefined);
   }),
+  schema: ({ image }) =>
+    z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      image: image(),
+      takenAt: z.coerce.date(),
+      album: z.string(),
+      isHero: z.boolean(),
+      tags: z.array(z.string()),
+    }),
 });
 
 const documents = defineCollection({
-  loader: () =>
-    guarded("documents", async () => {
-      const { apiKey, documentsFolderId } = env;
-      if (!apiKey || !documentsFolderId) return missing("documents", "GOOGLE_API_KEY", "DRIVE_DOCUMENTS_FOLDER_ID");
+  loader: googleLoader("documents", async () => {
+    const { apiKey, documentsFolderId } = env;
+    if (!apiKey || !documentsFolderId) return missing("documents", "GOOGLE_API_KEY", "DRIVE_DOCUMENTS_FOLDER_ID");
 
-      const files = await walkDriveFolder(documentsFolderId, apiKey);
-      return files
+    const files = await walkDriveFolder(documentsFolderId, apiKey);
+    return Promise.all(
+      files
         .filter((f) => !f.mimeType.startsWith("application/vnd.google-apps.") || GOOGLE_EXPORTABLE.has(f.mimeType))
-        .map((f) => {
+        .map(async (f): Promise<StoredEntry> => {
           const exported = GOOGLE_EXPORTABLE.has(f.mimeType);
           const ext = exported ? "pdf" : (f.fileExtension || f.name.split(".").pop() || "bin").toLowerCase();
           const base = exported ? f.name : f.name.replace(/\.[^.]+$/, "");
+          const isFlyer = f.tags[0] === driveFolders.flyers;
+
+          // Flyers need a picture for the start page: the image itself, or Drive's render of page 1.
+          let preview: ReturnType<typeof localImage> | undefined;
+          if (isFlyer) {
+            const imageExt = IMAGE_EXT[f.mimeType];
+            const previewUrl = imageExt
+              ? () => driveDownloadUrl(f.id, apiKey)
+              : f.thumbnailLink && (() => f.thumbnailLink!.replace(/=s\d+$/, "=s1600"));
+            if (previewUrl) {
+              const local = await tryDownload("documents", () =>
+                cachedDriveFile({
+                  id: `preview-${f.id}`,
+                  version: f.modifiedTime,
+                  ext: imageExt ?? "jpg",
+                  url: previewUrl,
+                  fallbackUrl: imageExt ? drivePublicDownloadUrl(f.id) : undefined,
+                }),
+              );
+              if (local) preview = localImage(local);
+            }
+          }
+
           return {
             id: f.id,
-            title: base,
-            description: f.description,
-            mimeType: exported ? "application/pdf" : f.mimeType,
-            ext,
-            // Files are re-hosted on the site (see src/pages/dokumente/dateien), never linked to Drive.
-            fileName: `${slugify(base)}-${f.id.slice(0, 6)}.${ext}`,
-            source: exported ? driveExportPdfUrl(f.id, apiKey) : driveDownloadUrl(f.id, apiKey),
-            thumbnail: f.thumbnailLink?.replace(/=s\d+$/, "=s1600"),
-            size: f.size ? Number(f.size) : undefined,
-            createdAt: f.createdTime,
-            modifiedAt: f.modifiedTime,
-            category: f.tags[0] ?? "Allgemein",
-            isFlyer: f.tags[0] === driveFolders.flyers,
-            tags: f.tags,
+            filePath: preview?.filePath,
+            digest: f.modifiedTime + (f.description ?? "") + f.tags.join("/"),
+            data: {
+              title: base,
+              description: f.description,
+              mimeType: exported ? "application/pdf" : f.mimeType,
+              ext,
+              // Files are re-hosted on the site (see src/pages/dokumente/dateien), never linked to Drive.
+              fileName: `${slugify(base)}-${f.id.slice(0, 6)}.${ext}`,
+              driveId: f.id,
+              exported,
+              preview: preview?.image,
+              size: f.size ? Number(f.size) : undefined,
+              createdAt: f.createdTime,
+              modifiedAt: f.modifiedTime,
+              category: f.tags[0] ?? "Allgemein",
+              isFlyer,
+              tags: f.tags,
+            },
           };
-        });
-    }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    mimeType: z.string(),
-    ext: z.string(),
-    fileName: z.string(),
-    source: z.url(),
-    thumbnail: z.url().optional(),
-    size: z.number().optional(),
-    createdAt: z.coerce.date(),
-    modifiedAt: z.coerce.date(),
-    category: z.string(),
-    isFlyer: z.boolean(),
-    tags: z.array(z.string()),
+        }),
+    );
   }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string().optional(),
+      mimeType: z.string(),
+      ext: z.string(),
+      fileName: z.string(),
+      driveId: z.string(),
+      exported: z.boolean(),
+      preview: image().optional(),
+      size: z.number().optional(),
+      createdAt: z.coerce.date(),
+      modifiedAt: z.coerce.date(),
+      category: z.string(),
+      isFlyer: z.boolean(),
+      tags: z.array(z.string()),
+    }),
 });
 
 const events = defineCollection({
-  loader: () =>
-    guarded("events", async () => {
-      const { apiKey, calendarId } = env;
-      if (!apiKey || !calendarId) return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_ID");
+  loader: googleLoader("events", async () => {
+    const { apiKey, calendarId } = env;
+    if (!apiKey || !calendarId) return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_ID");
 
-      const { from, to } = calendarRange();
-      const items = await listCalendarEvents(calendarId, apiKey, from, to);
+    const { from, to } = calendarRange();
+    const items = await listCalendarEvents(calendarId, apiKey, from, to);
 
-      return items.map((e) => {
-        const details = parseDescription(e.description ? htmlToText(e.description) : "");
-        return {
-          id: e.id,
-          title: e.summary?.trim() || "Termin",
-          category: (e.colorId && eventColorToCategory[e.colorId]) || defaultEventCategory,
-          location: e.location,
-          ...details,
-          allDay: Boolean(e.start.date),
-          // All-day events come as plain dates (end exclusive). Noon keeps them on the
-          // right day regardless of the build machine timezone or DST shifts.
-          start: e.start.dateTime ?? `${e.start.date}T12:00:00`,
-          end: e.end.dateTime ?? `${e.end.date}T12:00:00`,
-        };
-      });
-    }),
+    return items.map((e) => {
+      const details = parseDescription(e.description ? htmlToText(e.description) : "");
+      const data = {
+        title: e.summary?.trim() || "Termin",
+        category: (e.colorId && eventColorToCategory[e.colorId]) || defaultEventCategory,
+        location: e.location,
+        ...details,
+        allDay: Boolean(e.start.date),
+        // All-day events come as plain dates (end exclusive). Noon keeps them on the
+        // right day regardless of the build machine timezone or DST shifts.
+        start: e.start.dateTime ?? `${e.start.date}T12:00:00`,
+        end: e.end.dateTime ?? `${e.end.date}T12:00:00`,
+      };
+      return { id: e.id, data, digest: JSON.stringify(data) };
+    });
+  }),
   schema: z.object({
     title: z.string(),
     category: z.enum(["feste", "familie", "verein"]),

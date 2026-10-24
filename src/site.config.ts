@@ -15,22 +15,20 @@ export const site = {
   phone: "0176 64103757",
 
   board: [
-    { name: "[Vorname Nachname]", role: "1. Vorsitz" },
-    { name: "[Vorname Nachname]", role: "2. Vorsitz" },
-    { name: "[Vorname Nachname]", role: "Kasse" },
-    { name: "[Vorname Nachname]", role: "Schriftführung" },
+    { name: "Danny Himmelreich", role: "1. Vorsitz" },
+    { name: "Dorothea Roth", role: "2. Vorsitz" },
+    { name: "Anette Thielow", role: "Kasse" },
   ],
 
   villageFacts: {
     intro:
       "[Kurzer Text zur Lage des Dorfes: Landschaft, Nachbarorte, Wahrzeichen und was man hier gesehen haben sollte.]",
-    inhabitants: "[Zahl]",
-    firstMentioned: "[Jahr]",
-    district: "[Kreis]",
+    inhabitants: "`~250`",
+    firstMentioned: "1253",
+    district: "Saale-Holzland-Kreis",
     timeline: [
-      { year: "[Jahr]", text: "[Erste urkundliche Erwähnung]" },
+      { year: "1253", text: "Erste urkundliche Erwähnung" },
       { year: "2025", text: "Gründung des Vereins „Gemeinsam Im Dorf e.V.“" },
-      { year: "[Jahr]", text: "[Weiteres Ereignis der Dorfgeschichte]" },
     ],
     // Shown as a link only – an embedded map would load third-party content.
     mapLabel: "Dorfgemeinschaftshaus",

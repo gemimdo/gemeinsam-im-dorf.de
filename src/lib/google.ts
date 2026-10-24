@@ -111,6 +111,11 @@ export function driveDownloadUrl(fileId: string, apiKey: string): string {
   return `${DRIVE_API}/${fileId}?alt=media&key=${apiKey}`;
 }
 
+/** Drive's own download link for files shared as "Anyone with the link"; needs no API key. */
+export function drivePublicDownloadUrl(fileId: string): string {
+  return `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+}
+
 /** Google Docs/Sheets/Slides have no binary to download; Drive renders them to PDF instead. */
 export function driveExportPdfUrl(fileId: string, apiKey: string): string {
   return `${DRIVE_API}/${fileId}/export?mimeType=application%2Fpdf&key=${apiKey}`;

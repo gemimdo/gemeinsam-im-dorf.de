@@ -15,12 +15,6 @@ const monthYear = (d: Date) => {
   return `${MONTHS[Number(m) - 1]} ${y}`;
 };
 const meta = (p: CollectionEntry<"photos">) => [p.data.album, monthYear(p.data.takenAt)].filter(Boolean).join(" · ");
-const size = (p: CollectionEntry<"photos">) =>
-  p.data.width && p.data.height ? { width: p.data.width, height: p.data.height } : { inferSize: true as const };
-const thumbSize = (p: CollectionEntry<"photos">) =>
-  p.data.width && p.data.height
-    ? { width: 240, height: Math.round((p.data.height * 240) / p.data.width) }
-    : { inferSize: true as const, width: 240 };
 const pad = (n: number) => String(n).padStart(2, "0");
 ---
 
@@ -30,8 +24,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
       photos.map((p, i) => (
         <div class:list={["slide", { "is-active": i === 0 }]} data-slide data-caption={caption(p)} data-meta={meta(p)}>
           <Image
-            src={p.data.src}
-            {...size(p)}
+            src={p.data.image}
             alt={caption(p)}
             widths={[640, 960, 1280, 1920]}
             sizes="(max-width: 1240px) 100vw, 1160px"
@@ -79,7 +72,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
       <div class="thumbs">
         {photos.map((p, i) => (
           <button type="button" class="thumb" data-slide-to={i} aria-label={`Bild ${i + 1}: ${caption(p)}`}>
-            <Image src={p.data.src} {...thumbSize(p)} alt="" format="webp" quality={60} loading="lazy" />
+            <Image src={p.data.image} width={240} alt="" format="webp" quality={60} loading="lazy" />
             <span>{p.data.album || caption(p)}</span>
           </button>
         ))}
