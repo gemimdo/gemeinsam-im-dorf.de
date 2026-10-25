@@ -125,6 +125,11 @@ const activities: { icon: IconName; title: string; text: string }[] = [
               Jede Spende hilft uns, Feste, den Dorftreff und neue Projekte für {site.village} zu ermöglichen – egal ob groß
               oder klein. Verwendungszweck: <strong>„Spende“</strong>.
             </p>
+            <p>
+              Unser Verein ist als gemeinnützig anerkannt. Gern stellen wir Ihnen eine Spendenquittung
+              (Zuwendungsbestätigung) für das Finanzamt aus – geben Sie dafür im Verwendungszweck Ihren Namen und Ihre
+              Anschrift an oder schreiben Sie uns an <a href={`mailto:${site.email}`}>{site.email}</a>.
+            </p>
           </div>
         </div>
         <dl class="account">
@@ -398,10 +403,13 @@ const activities: { icon: IconName; title: string; text: string }[] = [
     font-size: 21px;
   }
   .bank-purpose p {
-    margin: 0;
+    margin: 0 0 10px;
     font-size: 17px;
     line-height: 1.65;
     color: var(--muted);
+  }
+  .bank-purpose p:last-child {
+    margin-bottom: 0;
   }
   .bank-purpose strong {
     color: var(--ink);
