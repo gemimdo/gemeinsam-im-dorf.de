@@ -2,7 +2,7 @@
 import type { CollectionEntry } from "astro:content";
 import { Image } from "astro:assets";
 import Icon from "../Icon.astro";
-import { MONTHS, TZ } from "../../lib/format";
+import { formatLocalMonth } from "../../lib/format";
 
 interface Props {
   photos: CollectionEntry<"photos">[];
@@ -10,11 +10,7 @@ interface Props {
 
 const { photos } = Astro.props;
 const caption = (p: CollectionEntry<"photos">) => p.data.description ?? p.data.name;
-const monthYear = (d: Date) => {
-  const [y, m] = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit" }).format(d).split("-");
-  return `${MONTHS[Number(m) - 1]} ${y}`;
-};
-const meta = (p: CollectionEntry<"photos">) => [p.data.album, monthYear(p.data.takenAt)].filter(Boolean).join(" · ");
+const meta = (p: CollectionEntry<"photos">) => [p.data.album, formatLocalMonth(p.data.takenAt)].filter(Boolean).join(" · ");
 const pad = (n: number) => String(n).padStart(2, "0");
 ---
 

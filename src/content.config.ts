@@ -5,6 +5,7 @@ import { defineCollection } from "astro:content";
 import type { Loader } from "astro/loaders";
 import { z } from "astro/zod";
 import { CACHE_DIR, cachedDriveFile } from "./lib/drive-cache";
+import { toLocalTime } from "./lib/format";
 import { renderPdfPages } from "./lib/pdf-pages";
 import {
   GOOGLE_EXPORTABLE,
@@ -122,7 +123,8 @@ const photos = defineCollection({
               name: f.name.replace(/\.[^.]+$/, ""),
               description: f.description,
               image,
-              takenAt: parseExifTime(f.imageMediaMetadata?.time) ?? f.modifiedTime,
+              // Capture time from the photo's EXIF data; upload time only if the camera stored none.
+              takenAt: parseExifTime(f.imageMediaMetadata?.time) ?? toLocalTime(f.modifiedTime),
               // The top-level subfolder is the album; deeper folders only add tags.
               album: f.tags[0] ?? "",
               isHero: f.tags[0] === driveFolders.heroPhotos,
@@ -138,7 +140,8 @@ const photos = defineCollection({
       name: z.string(),
       description: z.string().optional(),
       image: image(),
-      takenAt: z.coerce.date(),
+      /** German local time, "YYYY-MM-DDTHH:mm:ss" – sorts correctly as text. */
+      takenAt: z.string(),
       album: z.string(),
       isHero: z.boolean(),
       tags: z.array(z.string()),

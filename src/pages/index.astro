@@ -13,7 +13,7 @@ import { driveFolders, site } from "../site.config";
 import { fileTypeLabel } from "../lib/format";
 
 const events = await getEvents();
-const photos = (await getCollection("photos")).sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime());
+const photos = (await getCollection("photos")).sort((a, b) => b.data.takenAt.localeCompare(a.data.takenAt));
 const heroPhotos = photos.filter((p) => p.data.isHero);
 const latestPhotos = photos.filter((p) => !p.data.isHero).slice(0, 6);
 

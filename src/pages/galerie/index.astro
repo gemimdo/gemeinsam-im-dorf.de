@@ -5,12 +5,13 @@ import Layout from "../../layouts/Layout.astro";
 import PageHeader from "../../components/PageHeader.astro";
 import Icon from "../../components/Icon.astro";
 import { site } from "../../site.config";
+import { formatLocalDate } from "../../lib/format";
 
 type Photo = CollectionEntry<"photos">;
 
 const photos = (await getCollection("photos"))
   .filter((p) => !p.data.isHero)
-  .sort((a, b) => b.data.takenAt.getTime() - a.data.takenAt.getTime());
+  .sort((a, b) => b.data.takenAt.localeCompare(a.data.takenAt));
 
 // Albums in order of their newest photo.
 const albums = [...new Set(photos.map((p) => p.data.album).filter(Boolean))];
@@ -69,6 +70,7 @@ const items = await Promise.all(
                 data-thumb={thumb}
                 data-caption={caption(p)}
                 data-album-label={p.data.album}
+                data-date={formatLocalDate(p.data.takenAt)}
                 aria-label={`Bild öffnen: ${caption(p)}`}
               >
                 <Image
@@ -82,7 +84,9 @@ const items = await Promise.all(
                 />
                 <span class="label">
                   <span class="label-title">{caption(p)}</span>
-                  {p.data.album && <span class="label-album">{p.data.album}</span>}
+                  <span class="label-album">
+                    {[p.data.album, formatLocalDate(p.data.takenAt)].filter(Boolean).join(" · ")}
+                  </span>
                 </span>
               </button>
             </li>
@@ -132,7 +136,7 @@ const items = await Promise.all(
     img.src = tile.dataset.full!;
     img.alt = tile.dataset.caption!;
     title.textContent = tile.dataset.caption!;
-    album.textContent = tile.dataset.albumLabel ?? "";
+    album.textContent = [tile.dataset.albumLabel, tile.dataset.date].filter(Boolean).join(" · ");
     count.textContent = `${String(i + 1).padStart(2, "0")} / ${String(list.length).padStart(2, "0")}${tile.dataset.albumLabel ? ` · ${tile.dataset.albumLabel}` : ""}`;
     strip.replaceChildren(
       ...list.map((t) => {
@@ -190,7 +194,6 @@ const items = await Promise.all(
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
     grid-auto-rows: 210px;
-    grid-auto-flow: dense;
     gap: 14px;
   }
   .grid li {

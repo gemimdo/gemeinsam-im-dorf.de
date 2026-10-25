@@ -56,3 +56,37 @@ export function fileTypeLabel(ext: string): string {
   const map: Record<string, string> = { pdf: "PDF", doc: "Word", docx: "Word", xls: "Excel", xlsx: "Excel", odt: "ODT", jpg: "JPG", jpeg: "JPG", png: "PNG" };
   return map[ext] ?? ext.toUpperCase();
 }
+
+/**
+ * Capture times are kept as German local wall-clock time ("2026-05-01T21:21:01"): cameras store
+ * them without a time zone, so turning them into instants on a UTC build server could shift the day.
+ */
+export function toLocalTime(instant: string | Date): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(instant))
+      .map((p) => [p.type, p.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+/** "2026-05-01T21:21:01" → "1. Mai 2026" */
+export function formatLocalDate(local: string): string {
+  const [y, m, d] = local.slice(0, 10).split("-").map(Number);
+  return `${d}. ${MONTHS[m - 1]} ${y}`;
+}
+
+/** "2026-05-01T21:21:01" → "Mai 2026" */
+export function formatLocalMonth(local: string): string {
+  const [y, m] = local.slice(0, 7).split("-").map(Number);
+  return `${MONTHS[m - 1]} ${y}`;
+}
