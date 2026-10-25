@@ -27,7 +27,7 @@ export const site = {
   board: [
     { name: "Danny Himmelreich", role: "1. Vorsitz", email: "gemimdo@yahoo.com" },
     { name: "Dorothea Roth", role: "2. Vorsitz" },
-    { name: "Anette Thielow", role: "Kasse" },
+    { name: "Anett Thielow", role: "Kasse" },
   ],
 };
 
