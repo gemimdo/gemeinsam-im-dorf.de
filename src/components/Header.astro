@@ -221,11 +221,28 @@ const isCurrent = (href: string) => (href === "/" ? path === "/" : path.startsWi
   }
 
   @media (max-width: 1080px) {
+    .bar {
+      flex-wrap: nowrap;
+    }
+    .brand {
+      min-width: 0;
+    }
     .nav-desktop {
       display: none;
     }
     .nav-mobile {
       display: flex;
+    }
+  }
+  @media (max-width: 480px) {
+    .brand {
+      gap: 10px;
+    }
+    .brand :global(.crest) {
+      height: 40px;
+    }
+    .brand-name {
+      font-size: 16px;
     }
   }
   @media (min-width: 1081px) {

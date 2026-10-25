@@ -1,11 +1,16 @@
+import { createHash } from "node:crypto";
+import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { defineCollection } from "astro:content";
 import type { Loader } from "astro/loaders";
 import { z } from "astro/zod";
-import { cachedDriveFile } from "./lib/drive-cache";
+import { CACHE_DIR, cachedDriveFile } from "./lib/drive-cache";
+import { renderPdfPages } from "./lib/pdf-pages";
 import {
   GOOGLE_EXPORTABLE,
+  type DriveFile,
   driveDownloadUrl,
+  driveExportPdfUrl,
   drivePublicDownloadUrl,
   calendarRange,
   configuredCalendars,
@@ -146,6 +151,11 @@ const documents = defineCollection({
     if (!apiKey || !documentsFolderId) return missing("documents", "GOOGLE_API_KEY", "DRIVE_DOCUMENTS_FOLDER_ID");
 
     const files = await walkDriveFolder(documentsFolderId, apiKey);
+    // Newest newsletter issue: last by name, numbers compared by value ("… 10" after "… 9").
+    const latestIssue = files
+      .filter((f) => f.tags[0] === driveFolders.newsletter)
+      .sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true }))
+      .at(-1);
     return Promise.all(
       files
         .filter((f) => !f.mimeType.startsWith("application/vnd.google-apps.") || GOOGLE_EXPORTABLE.has(f.mimeType))
@@ -176,9 +186,15 @@ const documents = defineCollection({
             }
           }
 
+          // The newest newsletter is shown page by page in the start page reader.
+          const isLatestIssue = f.id === latestIssue?.id;
+          const pages = isLatestIssue
+            ? await tryDownload("documents", () => issuePages(f, exported, apiKey))
+            : undefined;
+
           return {
             id: f.id,
-            filePath: preview?.filePath,
+            filePath: preview?.filePath ?? (pages?.length ? path.relative(process.cwd(), pages[0]) : undefined),
             digest: f.modifiedTime + (f.description ?? "") + f.tags.join("/"),
             data: {
               title: base,
@@ -190,6 +206,8 @@ const documents = defineCollection({
               driveId: f.id,
               exported,
               preview: preview?.image,
+              pages: pages?.map((page) => `./${path.basename(page)}`),
+              isLatestIssue,
               size: f.size ? Number(f.size) : undefined,
               createdAt: f.createdTime,
               modifiedAt: f.modifiedTime,
@@ -211,6 +229,8 @@ const documents = defineCollection({
       driveId: z.string(),
       exported: z.boolean(),
       preview: image().optional(),
+      pages: z.array(image()).optional(),
+      isLatestIssue: z.boolean(),
       size: z.number().optional(),
       createdAt: z.coerce.date(),
       modifiedAt: z.coerce.date(),
@@ -279,6 +299,30 @@ function parseDescription(text: string) {
     .join("\n")
     .trim();
   return { description: rest || undefined, fee, contact };
+}
+
+/** Page images of a newsletter issue: rendered PDF pages, or the file itself if it is an image. */
+async function issuePages(f: DriveFile, exported: boolean, apiKey: string): Promise<string[]> {
+  const imageExt = IMAGE_EXT[f.mimeType];
+  const download = (ext: string) =>
+    cachedDriveFile({
+      id: f.id,
+      version: f.modifiedTime,
+      ext,
+      url: () => (exported ? driveExportPdfUrl(f.id, apiKey) : driveDownloadUrl(f.id, apiKey)),
+      fallbackUrl: exported ? undefined : drivePublicDownloadUrl(f.id),
+    });
+  if (imageExt) return [await download(imageExt)];
+  if (!exported && f.mimeType !== "application/pdf") return [];
+
+  const pdf = await download("pdf");
+  const prefix = `pages-${f.id}-`;
+  const base = `${prefix}${createHash("sha1").update(f.modifiedTime).digest("hex").slice(0, 10)}`;
+  // Drop renderings of older versions of this issue.
+  for (const name of await readdir(CACHE_DIR)) {
+    if (name.startsWith(prefix) && !name.startsWith(base)) await rm(path.join(CACHE_DIR, name), { force: true });
+  }
+  return renderPdfPages(pdf, path.join(CACHE_DIR, base));
 }
 
 /** EXIF timestamps look like "2024:05:12 14:03:00". */

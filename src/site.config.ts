@@ -59,4 +59,6 @@ export const driveFolders = {
   flyers: "Aushänge",
   /** Documents folder → subfolder whose files are listed in the start page box "Satzung, Formulare & Protokolle". */
   homeDocuments: "Organisation",
+  /** Documents folder → newsletter issues; the newest one is shown on the start page with a page reader. */
+  newsletter: "Rocksche Post",
 };

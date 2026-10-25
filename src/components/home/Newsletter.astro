@@ -1,0 +1,250 @@
+---
+// Newest "Rocksche Post" issue with a page-by-page reader in an overlay.
+import type { CollectionEntry } from "astro:content";
+import { Image } from "astro:assets";
+import Icon from "../Icon.astro";
+import { driveFolders } from "../../site.config";
+
+interface Props {
+  issue: CollectionEntry<"documents">;
+}
+
+const { issue } = Astro.props;
+const { data } = issue;
+const pages = data.pages ?? [];
+const fileUrl = `/dokumente/dateien/${data.fileName}`;
+---
+
+<section class="wrap section" aria-labelledby="newsletter-title">
+  <div class="row">
+    <div class="text">
+      <p class="eyebrow with-line">Dorfzeitung</p>
+      <h2 id="newsletter-title" class="display h2">{driveFolders.newsletter}</h2>
+      <div class="headline">
+        <span class="headline-title">{data.title}</span>
+        <span class="headline-sub">
+          {data.description ?? "Neuigkeiten von Verein und Ortsteilrat"}{pages.length > 1 && ` · ${pages.length} Seiten`}
+        </span>
+      </div>
+      <div class="actions">
+        {
+          pages.length > 0 && (
+            <button type="button" class="btn btn-primary" data-reader-open>
+              Jetzt lesen
+            </button>
+          )
+        }
+        <a href={fileUrl} download class="btn btn-ghost">
+          <Icon name="download" size={18} />
+          {data.ext.toUpperCase()} herunterladen
+        </a>
+      </div>
+      <a href={`/dokumente/?kategorie=${encodeURIComponent(data.category)}`} class="text-link">Ältere Ausgaben →</a>
+    </div>
+
+    {
+      pages[0] && (
+        <button type="button" class="cover" data-reader-open aria-haspopup="dialog" aria-label={`${data.title} lesen`}>
+          <Image src={pages[0]} alt="" widths={[360, 540, 720]} sizes="(max-width: 700px) 80vw, 360px" format="webp" quality={80} />
+          <span class="zoom" aria-hidden="true">
+            <Icon name="zoom" size={16} />
+            Lesen
+          </span>
+        </button>
+      )
+    }
+  </div>
+
+  {
+    pages.length > 0 && (
+      <dialog class="reader" aria-labelledby="reader-title">
+        <div class="reader-bar">
+          <span id="reader-title" class="reader-title">
+            {data.title}
+          </span>
+          <span class="reader-actions">
+            <a href={fileUrl} download class="reader-btn" aria-label={`${data.ext.toUpperCase()} herunterladen`}>
+              <Icon name="download" />
+            </a>
+            <button type="button" class="reader-btn" data-reader-close aria-label="Schließen">
+              <Icon name="close" />
+            </button>
+          </span>
+        </div>
+        <div class="reader-pages">
+          {pages.map((page, i) => (
+            <Image
+              src={page}
+              alt={`Seite ${i + 1} von ${pages.length}`}
+              widths={[600, 900, 1300]}
+              sizes="(max-width: 960px) 100vw, 900px"
+              format="webp"
+              quality={82}
+              loading="lazy"
+              class="reader-page"
+            />
+          ))}
+        </div>
+      </dialog>
+    )
+  }
+</section>
+
+<script>
+  const reader = document.querySelector<HTMLDialogElement>("dialog.reader");
+  for (const opener of document.querySelectorAll("[data-reader-open]")) {
+    opener.addEventListener("click", () => {
+      reader?.showModal();
+      reader?.querySelector(".reader-pages")?.scrollTo({ top: 0 });
+    });
+  }
+  reader?.querySelector("[data-reader-close]")?.addEventListener("click", () => reader.close());
+  // Clicking the dark area around the pages closes the reader.
+  reader?.addEventListener("click", (e) => {
+    if (e.target === reader || (e.target as HTMLElement).classList.contains("reader-pages")) reader.close();
+  });
+</script>
+
+<style>
+  .row {
+    display: flex;
+    flex-wrap: wrap-reverse;
+    align-items: center;
+    gap: 32px clamp(32px, 6vw, 88px);
+  }
+  .text {
+    flex: 1 1 360px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .headline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .headline-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1.2;
+  }
+  .headline-sub {
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .cover {
+    position: relative;
+    flex: 0 1 360px;
+    max-width: 360px;
+    margin-inline: auto;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 32px 64px -32px rgb(19 32 43 / 0.45);
+    cursor: zoom-in;
+    transition: transform 0.25s ease;
+  }
+  .cover:hover {
+    transform: translateY(-4px);
+  }
+  .cover :global(img) {
+    width: 100%;
+    height: auto;
+  }
+  .zoom {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--chip);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .reader {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(12 20 28 / 0.94);
+    color: #ffffff;
+  }
+  .reader[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  .reader::backdrop {
+    background: transparent;
+  }
+  .reader-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px clamp(12px, 3vw, 24px);
+    border-bottom: 1px solid #2c3b48;
+  }
+  .reader-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 18px;
+  }
+  .reader-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .reader-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #3a4a58;
+    background: transparent;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .reader-btn:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: #ffffff;
+  }
+  .reader-pages {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: clamp(12px, 3vw, 32px) clamp(8px, 3vw, 24px) 48px;
+  }
+  .reader-pages :global(.reader-page) {
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.6);
+  }
+</style>

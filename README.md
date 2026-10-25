@@ -40,6 +40,8 @@ Fotos/                         → DRIVE_PHOTOS_FOLDER_ID
 Dokumente/                     → DRIVE_DOCUMENTS_FOLDER_ID
 ├── Aushänge/                  flyers – the newest one is featured on the start page
 ├── Organisation/              listed in the start page box "Satzung, Formulare & Protokolle"
+├── Rocksche Post/             newsletter – the last issue by name (numbers by value) is shown
+│                              on the start page; its PDF pages are rendered for the reader
 ├── Formulare/                 category "Formulare"
 ├── Protokolle/
 └── Verein/

@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import Hero from "../components/home/Hero.astro";
 import Flyer from "../components/home/Flyer.astro";
+import Newsletter from "../components/home/Newsletter.astro";
 import PhotoCarousel from "../components/home/PhotoCarousel.astro";
 import Calendar from "../components/Calendar.astro";
 import Icon from "../components/Icon.astro";
@@ -20,6 +21,7 @@ const documents = await getCollection("documents");
 const flyer = documents
   .filter((d) => d.data.isFlyer)
   .sort((a, b) => b.data.createdAt.getTime() - a.data.createdAt.getTime())[0];
+const latestIssue = documents.find((d) => d.data.isLatestIssue);
 const featuredDocs = documents
   .filter((d) => d.data.category === driveFolders.homeDocuments)
   .sort((a, b) => a.data.title.localeCompare(b.data.title, "de"));
@@ -50,6 +52,8 @@ const featuredDocs = documents
       </div>
       <Calendar events={events} variant="compact" />
     </section>
+
+    {latestIssue && <Newsletter issue={latestIssue} />}
 
     {
       latestPhotos.length > 0 && (

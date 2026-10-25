@@ -19,7 +19,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@napi-rs/canvas": "^1.0.13",
     "@types/node": "^26.6.5",
+    "pdfjs-dist": "^6.4.299",
     "typescript": "^6"
   }
 }
