@@ -1,6 +1,8 @@
 ---
 import LegalPage from "../../components/LegalPage.astro";
 import { site } from "../../site.config";
+
+const chair = site.board[0];
 ---
 
 <LegalPage title="Impressum">
@@ -10,13 +12,59 @@ import { site } from "../../site.config";
     {site.address.street}<br />
     {site.address.zip} {site.address.city}
   </p>
-  <p>Vertreten durch den 1. Vorstand, Danny Himmelreich</p>
+  <p>Vertreten durch den 1. Vorstand, {chair.name}</p>
+
   <h2>Registereintrag</h2>
   <p>
     Vereinsregister des Amtsgerichts Jena<br />
     Registernummer: VR231828
   </p>
+
   <h2>Kontakt</h2>
-  <p>E-Mail: <a href={`mailto:${site.email}`}>{site.email}</a><br />Telefon: <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a></p>
-  <p>[Platzhalter – der vollständige Impressumstext muss vom Verein ergänzt werden.]</p>
+  <p>
+    E-Mail: <a href={`mailto:${site.email}`}>{site.email}</a><br />
+    Telefon: <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
+  </p>
+
+  <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+  <p>
+    {chair.name}<br />
+    {site.address.street}<br />
+    {site.address.zip} {site.address.city}
+  </p>
+
+  <h2>Haftung für Inhalte</h2>
+  <p>
+    Wir erstellen die Inhalte dieser Website ehrenamtlich und mit größtmöglicher Sorgfalt. Für die Richtigkeit,
+    Vollständigkeit und Aktualität der Inhalte – insbesondere von Terminen, die sich kurzfristig ändern können –
+    übernehmen wir jedoch keine Gewähr. Als Diensteanbieter sind wir nach § 7 Abs. 1 DDG für eigene Inhalte auf diesen
+    Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir nicht verpflichtet, übermittelte
+    oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige
+    Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen
+    Gesetzen bleiben hiervon unberührt. Sobald uns eine Rechtsverletzung bekannt wird, entfernen wir die betreffenden
+    Inhalte umgehend.
+  </p>
+
+  <h2>Haftung für Links</h2>
+  <p>
+    Diese Website enthält Links zu Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für diese fremden
+    Inhalte übernehmen wir deshalb keine Gewähr; verantwortlich ist stets der jeweilige Anbieter oder Betreiber der
+    verlinkten Seiten. Zum Zeitpunkt der Verlinkung waren keine Rechtsverstöße erkennbar. Werden uns Rechtsverletzungen
+    bekannt, entfernen wir derartige Links umgehend.
+  </p>
+
+  <h2>Urheberrecht</h2>
+  <p>
+    Die Texte, Fotos und Grafiken auf dieser Website stammen vom Verein und seinen Mitgliedern und unterliegen dem
+    deutschen Urheberrecht. Vervielfältigung, Bearbeitung und Verbreitung außerhalb der Grenzen des Urheberrechts
+    bedürfen der vorherigen Zustimmung des Vereins bzw. der jeweiligen Urheberin oder des jeweiligen Urhebers. Flyer und
+    Formulare im Bereich „Dokumente“ dürfen gern ausgedruckt und weitergegeben werden. Sollten Sie auf eine
+    Urheberrechtsverletzung aufmerksam werden, bitten wir um einen Hinweis; wir entfernen betroffene Inhalte umgehend.
+  </p>
+
+  <h2>Verbraucherstreitbeilegung</h2>
+  <p>
+    Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle
+    teilzunehmen.
+  </p>
 </LegalPage>
