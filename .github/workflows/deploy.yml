@@ -22,7 +22,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Skips everything (instead of failing every 30 minutes) until the repository secrets are set.
+  configured:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+        run: |
+          if [ -n "$GOOGLE_API_KEY" ] && [ -n "$SFTP_HOST" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Secrets not set yet (see README → Automatic publishing) – nothing to do."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
+    needs: configured
+    if: needs.configured.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
