@@ -54,14 +54,6 @@ const nextCandidates = events.slice(0, 12);
       <h1 id="hero-title" class="display title">
         Gemeinsam für {site.village}
       </h1>
-      <p class="intro">
-        Wir feiern Feste, packen bei Arbeitseinsätzen mit an und halten zusammen, was unser Dorf lebendig macht.
-        Mitmachen kann jede und jeder.
-      </p>
-      <div class="actions">
-        <a href="#termine" class="btn btn-primary">Termine ansehen <Icon name="arrow-right" size={18} /></a>
-        <a href="/verein/" class="btn btn-ghost">Über den Verein</a>
-      </div>
       {
         nextCandidates.map((e) => {
           const d = keyToUtc(e.firstDay);
@@ -188,7 +180,8 @@ const nextCandidates = events.slice(0, 12);
   /* Frosted glass: the header photos stay visible behind the card. */
   .card {
     --glass: color-mix(in srgb, var(--surface) 62%, transparent);
-    flex: 0 1 520px;
+    flex: 0 1 auto;
+    max-width: 680px;
     min-width: 0;
     position: relative;
     overflow: hidden;
@@ -213,27 +206,6 @@ const nextCandidates = events.slice(0, 12);
     font-size: clamp(34px, 4vw, 56px);
     line-height: 1;
     letter-spacing: -0.035em;
-  }
-  .intro {
-    margin: 0;
-    max-width: 40ch;
-    font-size: clamp(16px, 1.3vw, 18px);
-    line-height: 1.5;
-    color: var(--ink);
-    opacity: 0.8;
-  }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .actions .btn {
-    min-height: 46px;
-    padding: 0 20px;
-    font-size: 15px;
-  }
-  .actions .btn-ghost {
-    background: color-mix(in srgb, var(--surface) 50%, transparent);
   }
   .next {
     align-self: flex-start;
