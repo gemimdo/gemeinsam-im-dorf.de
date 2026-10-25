@@ -1,12 +1,120 @@
 ---
 import LegalPage from "../../components/LegalPage.astro";
+import { site } from "../../site.config";
+
+const chair = site.board[0];
 ---
 
 <LegalPage title="Datenschutz">
-  <p>[Platzhalter – die Datenschutzerklärung muss vom Verein ergänzt werden.]</p>
-  <h2>Hinweise zur Technik dieser Website</h2>
   <p>
-    Diese Website lädt keine Inhalte von Drittanbietern: Schriften, Fotos und Dokumente liegen auf unserem eigenen
-    Webspace. Es werden keine Cookies gesetzt. Gespeichert wird nur die gewählte Darstellung (hell/dunkel) im Browser.
+    Der Schutz Ihrer Daten ist uns wichtig. Diese Website ist bewusst schlicht gebaut: Sie setzt keine Cookies, verwendet
+    keine Analyse- oder Tracking-Werkzeuge und lädt keine Inhalte von anderen Anbietern. Im Folgenden erklären wir, welche
+    Daten trotzdem anfallen und was mit ihnen geschieht.
   </p>
+
+  <h2>Verantwortlicher</h2>
+  <p>
+    {site.clubName} {site.legalForm}<br />
+    {site.address.street}<br />
+    {site.address.zip} {site.address.city}<br />
+    vertreten durch den 1. Vorstand, {chair.name}
+  </p>
+  <p>
+    E-Mail: <a href={`mailto:${site.email}`}>{site.email}</a><br />
+    Telefon: <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
+  </p>
+  <p>
+    Einen Datenschutzbeauftragten haben wir nicht benannt, da die gesetzlichen Voraussetzungen dafür bei unserem Verein
+    nicht vorliegen.
+  </p>
+
+  <h2>Hosting und Server-Logdateien</h2>
+  <p>
+    Diese Website liegt auf Servern des Anbieters STRATO in Berlin. Bei jedem Aufruf einer Seite übermittelt Ihr Browser
+    automatisch Informationen, die der Server in sogenannten Logdateien speichert: Ihre IP-Adresse, Datum und Uhrzeit des
+    Abrufs, die aufgerufene Seite oder Datei, die zuvor besuchte Seite (Referrer), die übertragene Datenmenge sowie Angaben
+    zu Browser und Betriebssystem.
+  </p>
+  <p>
+    Diese Daten sind technisch notwendig, um die Website auszuliefern und ihre Sicherheit und Stabilität zu gewährleisten.
+    Rechtsgrundlage ist unser berechtigtes Interesse nach Art. 6 Abs. 1 lit. f DSGVO. Wir führen diese Daten nicht mit
+    anderen Daten zusammen und werten sie nicht zu Werbe- oder Analysezwecken aus. Die Logdateien werden nach kurzer Zeit
+    automatisch gelöscht. Mit STRATO besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.
+  </p>
+  <p>
+    Das gilt genauso, wenn Ihr Kalenderprogramm unseren Terminkalender („Kalender abonnieren“) regelmäßig abruft oder Sie
+    ein Dokument herunterladen.
+  </p>
+
+  <h2>Keine Cookies, kein Tracking, keine fremden Inhalte</h2>
+  <p>
+    Wir setzen keine Cookies und verwenden keine Dienste zur Reichweitenmessung, keine Werbenetzwerke und keine
+    Social-Media-Plugins. Schriftarten, Fotos und Dokumente liegen auf unserem eigenen Webspace; beim Besuch der Website
+    wird keine Verbindung zu Google oder anderen Drittanbietern hergestellt.
+  </p>
+  <p>
+    Wenn Sie zwischen hellem und dunklem Design wechseln, merkt sich Ihr Browser diese Auswahl im lokalen Speicher
+    (Local Storage). Diese Einstellung verlässt Ihr Gerät nicht, wird nicht an uns übertragen und enthält keine
+    personenbezogenen Daten. Sie dient ausschließlich der von Ihnen gewünschten Darstellung (§ 25 Abs. 2 Nr. 2 TDDDG) und
+    lässt sich jederzeit über die Browsereinstellungen löschen.
+  </p>
+
+  <h2>Kontakt per E-Mail, Telefon oder Kontaktformular</h2>
+  <p>
+    Wenn Sie uns per E-Mail oder Telefon kontaktieren, verarbeiten wir die Angaben, die Sie uns dabei mitteilen (zum
+    Beispiel Name, E-Mail-Adresse, Telefonnummer und Ihre Nachricht), um Ihr Anliegen zu bearbeiten. Rechtsgrundlage ist
+    Art. 6 Abs. 1 lit. b DSGVO, soweit es um eine Mitgliedschaft oder die Teilnahme an Veranstaltungen geht, im Übrigen
+    unser berechtigtes Interesse an der Beantwortung von Anfragen (Art. 6 Abs. 1 lit. f DSGVO). Wir löschen Ihre Anfrage,
+    sobald sie erledigt ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.
+  </p>
+  <p>
+    Das Kontaktformular auf der Seite „Verein &amp; Dorf“ sendet nichts an unseren Server. Es öffnet lediglich Ihr eigenes
+    E-Mail-Programm mit einer vorbereiteten Nachricht, die Sie selbst abschicken.
+  </p>
+  <p>
+    Unser E-Mail-Postfach wird von Yahoo (Yahoo EMEA Limited, Irland) bereitgestellt. E-Mails an uns werden daher auf
+    Servern von Yahoo gespeichert; dabei kann eine Verarbeitung auch außerhalb der Europäischen Union nicht ausgeschlossen
+    werden. Näheres finden Sie in der Datenschutzerklärung von Yahoo.
+  </p>
+
+  <h2>Beitrittserklärung und Mitgliedschaft</h2>
+  <p>
+    Die Angaben aus Ihrer Beitrittserklärung verwenden wir ausschließlich zur Verwaltung Ihrer Mitgliedschaft und zum
+    Einzug des Mitgliedsbeitrags (Art. 6 Abs. 1 lit. b DSGVO). Sie werden nicht auf dieser Website veröffentlicht und nicht
+    an Dritte weitergegeben, soweit dies nicht für den Beitragseinzug (Bank) erforderlich ist. Nach Ende der
+    Mitgliedschaft löschen wir die Daten, sobald steuer- und vereinsrechtliche Aufbewahrungsfristen abgelaufen sind.
+  </p>
+
+  <h2>Fotos von Veranstaltungen</h2>
+  <p>
+    In der Galerie zeigen wir Fotos aus dem Vereins- und Dorfleben, auf denen auch Personen zu sehen sein können. Wir
+    veröffentlichen diese Bilder im Rahmen unserer Vereinsarbeit auf Grundlage unseres berechtigten Interesses
+    (Art. 6 Abs. 1 lit. f DSGVO) bzw. mit Einwilligung der abgebildeten Personen. Fotos, auf denen Kinder im Mittelpunkt
+    stehen, veröffentlichen wir nur mit Einverständnis der Eltern. Wenn Sie auf einem Foto zu sehen sind und das nicht
+    möchten, genügt eine kurze Nachricht an {site.email} – wir entfernen das Bild umgehend.
+  </p>
+
+  <h2>Ihre Rechte</h2>
+  <p>Sie haben jederzeit das Recht,</p>
+  <ul>
+    <li>Auskunft über Ihre bei uns gespeicherten Daten zu erhalten (Art. 15 DSGVO),</li>
+    <li>unrichtige Daten berichtigen zu lassen (Art. 16 DSGVO),</li>
+    <li>die Löschung Ihrer Daten zu verlangen (Art. 17 DSGVO),</li>
+    <li>die Einschränkung der Verarbeitung zu verlangen (Art. 18 DSGVO),</li>
+    <li>Ihre Daten in einem gängigen Format zu erhalten (Art. 20 DSGVO),</li>
+    <li>
+      einer Verarbeitung, die auf unserem berechtigten Interesse beruht, aus Gründen Ihrer besonderen Situation zu
+      widersprechen (Art. 21 DSGVO),
+    </li>
+    <li>eine erteilte Einwilligung mit Wirkung für die Zukunft zu widerrufen (Art. 7 Abs. 3 DSGVO).</li>
+  </ul>
+  <p>Wenden Sie sich dazu einfach an die oben genannten Kontaktdaten.</p>
+  <p>
+    Außerdem können Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren. Für uns zuständig ist der Thüringer
+    Landesbeauftragte für den Datenschutz und die Informationsfreiheit (TLfDI), Häßlerstraße 8, 99096 Erfurt,{" "}
+    <a href="https://www.tlfdi.de" target="_blank" rel="noopener">www.tlfdi.de</a>.
+  </p>
+
+  <h2>Stand</h2>
+  <p>Oktober 2026</p>
 </LegalPage>
