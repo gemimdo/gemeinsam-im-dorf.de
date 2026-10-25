@@ -5,7 +5,7 @@ import Icon, { type IconName } from "../../components/Icon.astro";
 import { site } from "../../site.config";
 
 const documents = await getCollection("documents");
-const membershipForm = documents.find((d) => /beitritt/i.test(d.data.title));
+const membershipForm = documents.find((d) => /beitritt|mitgliedsantrag|aufnahmeantrag/i.test(d.data.title));
 const membershipHref = membershipForm ? `/dokumente/dateien/${membershipForm.data.fileName}` : "/dokumente/";
 
 const activities: { icon: IconName; title: string; text: string }[] = [
@@ -88,12 +88,12 @@ const activities: { icon: IconName; title: string; text: string }[] = [
             Mitgliedschaft hilft, Feste und Dorfpflege zu stemmen.
           </p>
           <ol class="steps">
-            <li><span class="step">1</span><span>Beitrittserklärung herunterladen und ausfüllen</span></li>
+            <li><span class="step">1</span><span>{membershipForm?.data.title ?? "Beitrittserklärung"} herunterladen und ausfüllen</span></li>
             <li><span class="step">2</span><span>Im Briefkasten bei Himmelreich, Rockau 70 einwerfen oder per E-Mail senden</span></li>
             <li><span class="step">3</span><span>Willkommen – wir melden uns mit allen Infos</span></li>
           </ol>
           <a href={membershipHref} class="btn join-btn" download={membershipForm ? "" : undefined}>
-            <Icon name="download" size={18} />Beitrittserklärung{membershipForm ? ` (${membershipForm.data.ext.toUpperCase()})` : ""}
+            <Icon name="download" size={18} />{membershipForm ? `${membershipForm.data.title} (${membershipForm.data.ext.toUpperCase()})` : "Beitrittserklärung"}
           </a>
         </div>
 

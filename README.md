@@ -39,6 +39,7 @@ Fotos/                         → DRIVE_PHOTOS_FOLDER_ID
 
 Dokumente/                     → DRIVE_DOCUMENTS_FOLDER_ID
 ├── Aushänge/                  flyers – the newest one is featured on the start page
+├── Organisation/              listed in the start page box "Satzung, Formulare & Protokolle"
 ├── Formulare/                 category "Formulare"
 ├── Protokolle/
 └── Verein/

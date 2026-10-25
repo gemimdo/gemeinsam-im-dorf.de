@@ -57,4 +57,6 @@ export const driveFolders = {
   heroPhotos: "Startseite",
   /** Documents folder → subfolder holding flyers; the newest one is featured on the start page. */
   flyers: "Aushänge",
+  /** Documents folder → subfolder whose files are listed in the start page box "Satzung, Formulare & Protokolle". */
+  homeDocuments: "Organisation",
 };

@@ -8,7 +8,7 @@ import Calendar from "../components/Calendar.astro";
 import Icon from "../components/Icon.astro";
 import { getEvents } from "../lib/events";
 import { eventCategories } from "../site.config";
-import { site } from "../site.config";
+import { driveFolders, site } from "../site.config";
 import { fileTypeLabel } from "../lib/format";
 
 const events = await getEvents();
@@ -21,9 +21,8 @@ const flyer = documents
   .filter((d) => d.data.isFlyer)
   .sort((a, b) => b.data.createdAt.getTime() - a.data.createdAt.getTime())[0];
 const featuredDocs = documents
-  .filter((d) => !d.data.isFlyer)
-  .sort((a, b) => b.data.modifiedAt.getTime() - a.data.modifiedAt.getTime())
-  .slice(0, 3);
+  .filter((d) => d.data.category === driveFolders.homeDocuments)
+  .sort((a, b) => a.data.title.localeCompare(b.data.title, "de"));
 ---
 
 <Layout description={`${site.clubName}: Feste, Arbeitseinsätze und Zusammenhalt in ${site.village}.`}>
