@@ -2,7 +2,6 @@
 import type { CollectionEntry } from "astro:content";
 import { Image } from "astro:assets";
 import Icon from "../Icon.astro";
-import Windmill from "../Windmill.astro";
 import type { EventView } from "../../lib/events";
 import { MONTHS_SHORT, WEEKDAYS_SHORT, keyToUtc } from "../../lib/format";
 import { site } from "../../site.config";
@@ -43,9 +42,6 @@ const nextCandidates = events.slice(0, 12);
             <path d="M0 600 C240 540 460 552 700 590 C940 628 1160 590 1440 540" stroke="#1E6BB8" stroke-width="2" opacity="0.45" />
             <path d="M0 670 C280 624 520 640 760 664 C1000 688 1220 660 1440 640" stroke="#1E6BB8" stroke-width="2" opacity="0.3" />
             <path d="M0 730 C300 700 600 712 880 724 C1100 734 1300 720 1440 714" stroke="#1E6BB8" stroke-width="2" opacity="0.18" />
-            <Windmill x={1080} y={150} width={280} height={448} stroke="#1E6BB8" strokeWidth={1.4} />
-            <Windmill x={860} y={330} width={160} height={256} stroke="#1E6BB8" strokeWidth={1.8} opacity={0.6} speed="r2" />
-            <Windmill x={720} y={420} width={100} height={160} stroke="#1E6BB8" strokeWidth={2.4} opacity={0.4} speed="r3" />
           </svg>
         </div>
       )
@@ -54,7 +50,6 @@ const nextCandidates = events.slice(0, 12);
 
   <div class="wrap content">
     <div class="card">
-      <Windmill class="card-mill" stroke="#1E6BB8" speed="r2" />
       <p class="eyebrow with-line">Dorfverein seit {site.founded}</p>
       <h1 id="hero-title" class="display title">
         Gemeinsam <span class="accent">Rückenwind</span> für {site.village}.
@@ -202,14 +197,6 @@ const nextCandidates = events.slice(0, 12);
     border-radius: 28px;
     background: var(--surface);
     box-shadow: var(--shadow-lg);
-  }
-  .card :global(.card-mill) {
-    position: absolute;
-    right: -18px;
-    top: -26px;
-    height: 150px;
-    width: auto;
-    opacity: 0.16;
   }
   .title {
     font-size: clamp(40px, 5.2vw, 76px);

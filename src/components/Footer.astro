@@ -1,5 +1,4 @@
 ---
-import Windmill from "./Windmill.astro";
 import { site } from "../site.config";
 import { subscribeUrl } from "../lib/events";
 
@@ -7,7 +6,6 @@ const icsUrl = subscribeUrl(Astro.site);
 ---
 
 <footer class="foot">
-  <Windmill class="foot-mill" stroke="#FFFFFF" strokeWidth={1.5} speed="r2" />
   <div class="wrap inner">
     <div class="cols">
       <div class="col">
@@ -46,14 +44,6 @@ const icsUrl = subscribeUrl(Astro.site);
     color: #ffffff;
     position: relative;
     overflow: hidden;
-  }
-  .foot :global(.foot-mill) {
-    position: absolute;
-    right: -40px;
-    bottom: -60px;
-    height: 380px;
-    width: auto;
-    opacity: 0.12;
   }
   .inner {
     position: relative;

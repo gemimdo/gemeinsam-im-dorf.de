@@ -347,30 +347,9 @@ button {
   white-space: nowrap;
 }
 
-/* Windmill motif */
-.rotor {
-  transform-box: view-box;
-  transform-origin: 100px 80px;
-  animation: spin 8s linear infinite;
-}
-.rotor.r2 {
-  animation-duration: 11s;
-}
-.rotor.r3 {
-  animation-duration: 6.5s;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-  .rotor {
-    animation: none;
   }
 }
 
