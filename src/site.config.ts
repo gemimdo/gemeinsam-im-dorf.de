@@ -29,21 +29,6 @@ export const site = {
     { name: "Dorothea Roth", role: "2. Vorsitz" },
     { name: "Anette Thielow", role: "Kasse" },
   ],
-
-  villageFacts: {
-    intro:
-      "[Kurzer Text zur Lage des Dorfes: Landschaft, Nachbarorte, Wahrzeichen und was man hier gesehen haben sollte.]",
-    inhabitants: "~250",
-    firstMentioned: "1253",
-    district: "Saale-Holzland-Kreis",
-    timeline: [
-      { year: "1253", text: "Erste urkundliche Erwähnung" },
-      { year: "2025", text: "Gründung des Vereins „Gemeinsam Im Dorf e.V.“" },
-    ],
-    // Shown as a link only – an embedded map would load third-party content.
-    mapLabel: "Dorfgemeinschaftshaus",
-    mapUrl: "https://www.openstreetmap.org/",
-  },
 };
 
 /**
