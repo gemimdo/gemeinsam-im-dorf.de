@@ -10,6 +10,14 @@ export const site = {
   annualFee: "24 €",
   reducedFee: "12 €",
 
+  /** Club account for membership fees and donations. Holder spelled exactly as at the bank (payee name check). */
+  bank: {
+    holder: "Gemeinsam im Dorf e. V.",
+    iban: "DE87830654080005502551",
+    bic: "GENODEF1SLR",
+    name: "Skatbank",
+  },
+
   address: { street: "Rockau 70", zip: "07619", city: "Schkölen" },
   email: "gemimdo@yahoo.com",
   phone: "0176 64103757",

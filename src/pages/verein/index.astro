@@ -30,6 +30,7 @@ const activities: { icon: IconName; title: string; text: string }[] = [
           <a href="#verein" class="btn btn-ghost btn-sm">Der Verein</a>
           <a href="#vorstand" class="btn btn-ghost btn-sm">Vorstand</a>
           <a href="#mitglied" class="btn btn-ghost btn-sm">Mitglied werden</a>
+          <a href="#spenden" class="btn btn-ghost btn-sm">Beitrag &amp; Spenden</a>
         </nav>
       </div>
     </div>
@@ -107,10 +108,59 @@ const activities: { icon: IconName; title: string; text: string }[] = [
         </form>
       </div>
     </section>
+
+    <section id="spenden" class="wrap section" aria-labelledby="spenden-title">
+      <div class="bank">
+        <div class="bank-text">
+          <h2 id="spenden-title" class="display h2">Beitrag &amp; Spenden</h2>
+          <div class="bank-purpose">
+            <h3>Mitgliedsbeitrag</h3>
+            <p>
+              {site.annualFee} im Jahr, ermäßigt {site.reducedFee}. Bitte überweisen Sie den Beitrag einmal jährlich mit dem
+              Verwendungszweck <strong>„Mitgliedsbeitrag {new Date().getFullYear()}, Vor- und Nachname“</strong>.
+            </p>
+          </div>
+          <div class="bank-purpose">
+            <h3>Spenden</h3>
+            <p>
+              Jede Spende hilft uns, Feste, den Dorftreff und neue Projekte für {site.village} zu ermöglichen – egal ob groß
+              oder klein. Verwendungszweck: <strong>„Spende“</strong>.
+            </p>
+          </div>
+        </div>
+        <dl class="account">
+          <div><dt>Kontoinhaber</dt><dd>{site.bank.holder}</dd></div>
+          <div>
+            <dt>IBAN</dt>
+            <dd class="iban-row">
+              <span class="iban">{site.bank.iban.replace(/(.{4})/g, "$1 ").trim()}</span>
+              <button type="button" class="copy" data-copy={site.bank.iban} aria-label="IBAN kopieren">
+                <span data-copy-label>Kopieren</span>
+              </button>
+            </dd>
+          </div>
+          <div><dt>BIC</dt><dd>{site.bank.bic}</dd></div>
+          <div><dt>Bank</dt><dd>{site.bank.name}</dd></div>
+        </dl>
+      </div>
+    </section>
   </main>
 </Layout>
 
 <script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+    button.addEventListener("click", async () => {
+      const label = button.querySelector<HTMLElement>("[data-copy-label]")!;
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy!);
+        label.textContent = "Kopiert";
+      } catch {
+        label.textContent = "Bitte markieren";
+      }
+      setTimeout(() => (label.textContent = "Kopieren"), 2000);
+    });
+  }
+
   // No server: the form composes an e-mail in the visitor's own mail program.
   const form = document.querySelector<HTMLFormElement>("form.contact")!;
   form.addEventListener("submit", (e) => {
@@ -326,6 +376,86 @@ const activities: { icon: IconName; title: string; text: string }[] = [
   .join-btn:hover {
     background: var(--line-soft);
     color: var(--ink);
+  }
+  .bank {
+    border-radius: 32px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: clamp(28px, 5vw, 56px);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+    gap: 32px 64px;
+    align-items: start;
+  }
+  .bank-text {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .bank-purpose h3 {
+    margin: 0 0 6px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 21px;
+  }
+  .bank-purpose p {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .bank-purpose strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .account {
+    margin: 0;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 24px;
+    background: var(--soft-blue);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .account div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .account dt {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--soft-blue-text);
+  }
+  .account dd {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 500;
+  }
+  .iban-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+  }
+  .iban {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    user-select: all;
+  }
+  .copy {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .copy:hover {
+    background: var(--line-soft);
   }
   .contact {
     position: relative;
