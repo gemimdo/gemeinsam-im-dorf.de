@@ -1,0 +1,149 @@
+---
+// Full-screen overlay showing one or more page images (a picture, or the pages of a PDF
+// rendered at build time). Any element with data-viewer-open="<id>" opens it.
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import Icon from "./Icon.astro";
+
+interface Props {
+  id: string;
+  title: string;
+  pages: ImageMetadata[];
+  downloadHref: string;
+  /** e.g. "PDF" or "PNG" */
+  fileType: string;
+}
+
+const { id, title, pages, downloadHref, fileType } = Astro.props;
+---
+
+<dialog class="viewer" id={id} aria-label={title}>
+  <div class="viewer-bar">
+    <span class="viewer-title">{title}</span>
+    <span class="viewer-actions">
+      <a href={downloadHref} download class="viewer-btn" aria-label={`${fileType} herunterladen`}>
+        <Icon name="download" />
+      </a>
+      <button type="button" class="viewer-btn" data-viewer-close aria-label="Schließen">
+        <Icon name="close" />
+      </button>
+    </span>
+  </div>
+  <div class="viewer-pages">
+    {
+      pages.map((page, i) => (
+        <Image
+          src={page}
+          alt={pages.length > 1 ? `${title}, Seite ${i + 1} von ${pages.length}` : title}
+          widths={[600, 900, 1300]}
+          sizes="(max-width: 960px) 100vw, 900px"
+          format="webp"
+          quality={82}
+          loading="lazy"
+          class="viewer-page"
+        />
+      ))
+    }
+  </div>
+</dialog>
+
+<script>
+  // One listener for all viewers on the page.
+  if (!document.documentElement.dataset.viewerReady) {
+    document.documentElement.dataset.viewerReady = "1";
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const opener = target.closest<HTMLElement>("[data-viewer-open]");
+      if (opener) {
+        const viewer = document.getElementById(opener.dataset.viewerOpen!) as HTMLDialogElement | null;
+        if (!viewer) return;
+        e.preventDefault();
+        viewer.showModal();
+        viewer.querySelector(".viewer-pages")?.scrollTo({ top: 0 });
+        return;
+      }
+      const viewer = target.closest<HTMLDialogElement>("dialog.viewer");
+      // Close button, or a click on the dark area around the pages.
+      if (viewer && (target.closest("[data-viewer-close]") || target === viewer || target.classList.contains("viewer-pages"))) {
+        viewer.close();
+      }
+    });
+  }
+</script>
+
+<style>
+  .viewer {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(12 20 28 / 0.94);
+    color: #ffffff;
+  }
+  .viewer[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  .viewer::backdrop {
+    background: transparent;
+  }
+  .viewer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px clamp(12px, 3vw, 24px);
+    border-bottom: 1px solid #2c3b48;
+  }
+  .viewer-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 18px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .viewer-actions {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .viewer-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #3a4a58;
+    background: transparent;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .viewer-btn:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: #ffffff;
+  }
+  .viewer-pages {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: clamp(12px, 3vw, 32px) clamp(8px, 3vw, 24px) 48px;
+  }
+  .viewer-pages :global(.viewer-page) {
+    width: auto;
+    max-width: min(100%, 900px);
+    height: auto;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.6);
+  }
+</style>

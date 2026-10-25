@@ -1,3 +1,4 @@
+import type { ImageMetadata } from "astro";
 import { getCollection } from "astro:content";
 import { eventCategories, type EventCategory } from "../site.config";
 import { MONTHS, addDays, dayKey, describeKey, formatTime, keyToUtc, utcToKey } from "./format";
@@ -22,7 +23,19 @@ export interface EventView {
   /** "Samstag, 7. November 2026, 11:00 – 13:00 Uhr" */
   whenLong: string;
   icsPath: string;
-  attachments: { title: string; href: string; type: string; mimeType: string; size?: number }[];
+  attachments: EventAttachment[];
+}
+
+export interface EventAttachment {
+  title: string;
+  href: string;
+  type: string;
+  mimeType: string;
+  size?: number;
+  /** Viewer images; empty when the file can only be downloaded. */
+  pages: ImageMetadata[];
+  /** id of its PageViewer overlay */
+  viewerId: string;
 }
 
 /** Start and end of a timed event; the end day is named only when it differs. */
@@ -63,6 +76,8 @@ export async function getEvents(): Promise<EventView[]> {
           href: `/termine/anhaenge/${a.fileName}`,
           type: a.ext.toUpperCase(),
           mimeType: a.mimeType,
+          pages: a.pages,
+          viewerId: `viewer-${a.fileName.replace(/[^a-z0-9-]/gi, "-")}`,
           size: a.size,
         })),
       };

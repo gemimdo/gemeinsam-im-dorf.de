@@ -258,7 +258,10 @@ const events = defineCollection({
     return Promise.all(
       items.map(async ({ category, event: e }) => {
         const details = parseDescription(e.description ? htmlToText(e.description) : "");
-        const attachments = await eventAttachments(e.attachments ?? [], apiKey);
+        const loaded = await eventAttachments(e.attachments ?? [], apiKey);
+        // Viewer images live in the cache folder; image() resolves "./name" next to filePath.
+        const firstPage = loaded.flatMap((a) => a.pages)[0];
+        const attachments = loaded.map((a) => ({ ...a, pages: a.pages.map((p) => `./${path.basename(p)}`) }));
         const data = {
           title: e.summary?.trim() || "Termin",
           category,
@@ -272,34 +275,42 @@ const events = defineCollection({
           attachments,
         };
         // Event IDs are only unique within one calendar.
-        return { id: `${category}-${e.id}`, data, digest: JSON.stringify(data) };
+        return {
+          id: `${category}-${e.id}`,
+          data,
+          filePath: firstPage ? path.relative(process.cwd(), firstPage) : undefined,
+          digest: JSON.stringify(data),
+        };
       }),
     );
   }),
-  schema: z.object({
-    title: z.string(),
-    category: z.enum(Object.keys(eventCategories) as [EventCategory, ...EventCategory[]]),
-    location: z.string().optional(),
-    description: z.string().optional(),
-    fee: z.string().optional(),
-    contact: z.string().optional(),
-    allDay: z.boolean(),
-    start: z.string(),
-    end: z.string(),
-    /** Re-hosted under /termine/anhaenge/<fileName> (src/pages/termine/anhaenge). */
-    attachments: z.array(
-      z.object({
-        title: z.string(),
-        fileName: z.string(),
-        driveId: z.string(),
-        version: z.string(),
-        exported: z.boolean(),
-        mimeType: z.string(),
-        ext: z.string(),
-        size: z.number().optional(),
-      }),
-    ),
-  }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      category: z.enum(Object.keys(eventCategories) as [EventCategory, ...EventCategory[]]),
+      location: z.string().optional(),
+      description: z.string().optional(),
+      fee: z.string().optional(),
+      contact: z.string().optional(),
+      allDay: z.boolean(),
+      start: z.string(),
+      end: z.string(),
+      /** Re-hosted under /termine/anhaenge/<fileName> (src/pages/termine/anhaenge). */
+      attachments: z.array(
+        z.object({
+          title: z.string(),
+          fileName: z.string(),
+          driveId: z.string(),
+          version: z.string(),
+          exported: z.boolean(),
+          mimeType: z.string(),
+          ext: z.string(),
+          size: z.number().optional(),
+          /** Images for the viewer overlay (empty for files that can't be shown). */
+          pages: z.array(image()),
+        }),
+      ),
+    }),
 });
 
 /**
@@ -324,6 +335,10 @@ async function eventAttachments(attachments: NonNullable<CalendarEvent["attachme
         url: () => (exported ? driveExportPdfUrl(a.fileId!, apiKey) : driveDownloadUrl(a.fileId!, apiKey)),
         fallbackUrl: exported ? undefined : drivePublicDownloadUrl(a.fileId),
       });
+      const pages = await viewerPages(
+        { id: a.fileId, version: meta.modifiedTime, mimeType: meta.mimeType, exported },
+        apiKey,
+      );
       result.push({
         title,
         fileName: `${slugify(title)}-${a.fileId.slice(0, 6)}.${ext}`,
@@ -333,6 +348,7 @@ async function eventAttachments(attachments: NonNullable<CalendarEvent["attachme
         mimeType: exported ? "application/pdf" : meta.mimeType,
         ext,
         size: meta.size ? Number(meta.size) : undefined,
+        pages,
       });
     } catch (error) {
       console.warn(`[events] attachment "${a.title}" skipped: ${(error as Error).message}`);
@@ -363,23 +379,34 @@ function parseDescription(text: string) {
 }
 
 /** Page images of a newsletter issue: rendered PDF pages, or the file itself if it is an image. */
-async function issuePages(f: DriveFile, exported: boolean, apiKey: string): Promise<string[]> {
-  const imageExt = IMAGE_EXT[f.mimeType];
+function issuePages(f: DriveFile, exported: boolean, apiKey: string): Promise<string[]> {
+  return viewerPages({ id: f.id, version: f.modifiedTime, mimeType: f.mimeType, exported }, apiKey);
+}
+
+/**
+ * Images for the page viewer overlay: the file itself if it is an image, one image per page
+ * for PDFs (and Google Docs exported as PDF), nothing for other types.
+ */
+async function viewerPages(
+  file: { id: string; version: string; mimeType: string; exported: boolean },
+  apiKey: string,
+): Promise<string[]> {
+  const imageExt = IMAGE_EXT[file.mimeType];
   const download = (ext: string) =>
     cachedDriveFile({
-      id: f.id,
-      version: f.modifiedTime,
+      id: file.id,
+      version: file.version,
       ext,
-      url: () => (exported ? driveExportPdfUrl(f.id, apiKey) : driveDownloadUrl(f.id, apiKey)),
-      fallbackUrl: exported ? undefined : drivePublicDownloadUrl(f.id),
+      url: () => (file.exported ? driveExportPdfUrl(file.id, apiKey) : driveDownloadUrl(file.id, apiKey)),
+      fallbackUrl: file.exported ? undefined : drivePublicDownloadUrl(file.id),
     });
   if (imageExt) return [await download(imageExt)];
-  if (!exported && f.mimeType !== "application/pdf") return [];
+  if (!file.exported && file.mimeType !== "application/pdf") return [];
 
   const pdf = await download("pdf");
-  const prefix = `pages-${f.id}-`;
-  const base = `${prefix}${createHash("sha1").update(f.modifiedTime).digest("hex").slice(0, 10)}`;
-  // Drop renderings of older versions of this issue.
+  const prefix = `pages-${file.id}-`;
+  const base = `${prefix}${createHash("sha1").update(file.version).digest("hex").slice(0, 10)}`;
+  // Drop renderings of older versions of this file.
   for (const name of await readdir(CACHE_DIR)) {
     if (name.startsWith(prefix) && !name.startsWith(base)) await rm(path.join(CACHE_DIR, name), { force: true });
   }

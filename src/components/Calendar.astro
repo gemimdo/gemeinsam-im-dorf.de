@@ -3,6 +3,7 @@
 // at build time; the client script only switches months, marks today and the
 // selected day, and applies category filters.
 import Icon from "./Icon.astro";
+import PageViewer from "./PageViewer.astro";
 import { buildMonths, eventsByDay, type EventView } from "../lib/events";
 import { MONTHS, MONTHS_SHORT } from "../lib/format";
 
@@ -32,6 +33,10 @@ const dayLabel = (key: string) => {
   return `${names[wd]}, ${d}. ${MONTHS[m - 1]}${suffix}`;
 };
 const panelDays = [...byDay.keys()];
+// One overlay per attachment, even if several events (e.g. repeats) share it.
+const viewers = [
+  ...new Map(events.flatMap((e) => e.attachments).filter((a) => a.pages.length).map((a) => [a.viewerId, a])).values(),
+];
 ---
 
 <div class:list={["cal", variant]} data-calendar>
@@ -127,8 +132,14 @@ const panelDays = [...byDay.keys()];
                       <ul class="attachments" aria-label="Anhänge">
                         {e.attachments.map((a) => (
                           <li>
-                            <a href={a.href} target="_blank" rel="noopener" class="attachment">
-                              <Icon name="file" size={16} />
+                            <a
+                              href={a.href}
+                              target="_blank"
+                              rel="noopener"
+                              class="attachment"
+                              data-viewer-open={a.pages.length > 0 ? a.viewerId : undefined}
+                            >
+                              <Icon name={a.pages.length > 0 ? "zoom" : "file"} size={16} />
                               <span>{a.title}</span>
                               <span class="attachment-type">{a.type}</span>
                             </a>
@@ -187,8 +198,14 @@ const panelDays = [...byDay.keys()];
                         <ul class="attachments" aria-label="Anhänge">
                           {e.attachments.map((a) => (
                             <li>
-                              <a href={a.href} target="_blank" rel="noopener" class="attachment">
-                                <Icon name="file" size={16} />
+                              <a
+                                href={a.href}
+                                target="_blank"
+                                rel="noopener"
+                                class="attachment"
+                                data-viewer-open={a.pages.length > 0 ? a.viewerId : undefined}
+                              >
+                                <Icon name={a.pages.length > 0 ? "zoom" : "file"} size={16} />
                                 <span>{a.title}</span>
                                 <span class="attachment-type">{a.type}</span>
                               </a>
@@ -250,6 +267,12 @@ const panelDays = [...byDay.keys()];
     }
   </aside>
 </div>
+
+{
+  viewers.map((a) => (
+    <PageViewer id={a.viewerId} title={a.title} pages={a.pages} downloadHref={a.href} fileType={a.type} />
+  ))
+}
 
 <script>
   import { initCalendars } from "../scripts/calendar";
