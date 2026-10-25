@@ -40,12 +40,10 @@ export const site = {
 };
 
 /**
- * Event categories. Each one is its own public Google calendar (IDs in .env:
- * GOOGLE_CALENDAR_FESTE, GOOGLE_CALENDAR_FAMILIE, GOOGLE_CALENDAR_VEREIN).
+ * Event categories, one public Google calendar each (see `env.calendars` in src/lib/google.ts).
+ * With a single category the colour legend and the category filters are hidden.
  */
 export const eventCategories = {
-  feste: { label: "Feste & Kultur" },
-  familie: { label: "Kinder & Familie" },
   verein: { label: "Vereinsleben" },
 } as const;
 

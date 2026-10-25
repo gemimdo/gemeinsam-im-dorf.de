@@ -27,9 +27,7 @@ jobs:
     timeout-minutes: 20
     env:
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      GOOGLE_CALENDAR_FESTE: ${{ secrets.GOOGLE_CALENDAR_FESTE }}
-      GOOGLE_CALENDAR_FAMILIE: ${{ secrets.GOOGLE_CALENDAR_FAMILIE }}
-      GOOGLE_CALENDAR_VEREIN: ${{ secrets.GOOGLE_CALENDAR_VEREIN }}
+      GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
       DRIVE_PHOTOS_FOLDER_ID: ${{ secrets.DRIVE_PHOTOS_FOLDER_ID }}
       DRIVE_DOCUMENTS_FOLDER_ID: ${{ secrets.DRIVE_DOCUMENTS_FOLDER_ID }}
     steps:

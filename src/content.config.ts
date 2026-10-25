@@ -19,7 +19,7 @@ import {
   listCategoryEvents,
   walkDriveFolder,
 } from "./lib/google";
-import { driveFolders } from "./site.config";
+import { driveFolders, eventCategories, type EventCategory } from "./site.config";
 
 // Formats Astro's image pipeline (sharp) can process. HEIC from iPhones is not among them.
 const IMAGE_EXT: Record<string, string> = {
@@ -247,7 +247,7 @@ const events = defineCollection({
   loader: googleLoader("events", async () => {
     const { apiKey } = env;
     if (!apiKey || configuredCalendars().length === 0) {
-      return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_FESTE / _FAMILIE / _VEREIN");
+      return missing("events", "GOOGLE_API_KEY", "GOOGLE_CALENDAR_ID");
     }
 
     const { from, to } = calendarRange();
@@ -272,7 +272,7 @@ const events = defineCollection({
   }),
   schema: z.object({
     title: z.string(),
-    category: z.enum(["feste", "familie", "verein"]),
+    category: z.enum(Object.keys(eventCategories) as [EventCategory, ...EventCategory[]]),
     location: z.string().optional(),
     description: z.string().optional(),
     fee: z.string().optional(),

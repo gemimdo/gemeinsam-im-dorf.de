@@ -7,7 +7,7 @@ import { calendarRange, configuredCalendars, env, listCategoryEvents, walkDriveF
 const { apiKey, photosFolderId, documentsFolderId } = env;
 if (!apiKey || configuredCalendars().length === 0 || !photosFolderId || !documentsFolderId) {
   console.error(
-    "GOOGLE_API_KEY, at least one GOOGLE_CALENDAR_FESTE/_FAMILIE/_VEREIN, DRIVE_PHOTOS_FOLDER_ID and DRIVE_DOCUMENTS_FOLDER_ID must be set.",
+    "GOOGLE_API_KEY, GOOGLE_CALENDAR_ID, DRIVE_PHOTOS_FOLDER_ID and DRIVE_DOCUMENTS_FOLDER_ID must be set.",
   );
   process.exit(1);
 }

@@ -27,14 +27,6 @@
   --shadow-lg: 0 24px 60px -24px rgb(19 32 43 / 0.35);
 
   /* Event / document categories */
-  --cat-feste: var(--accent);
-  --cat-feste-dark: #6fa8e0;
-  --cat-feste-soft: var(--soft-blue);
-  --cat-feste-text: var(--soft-blue-text);
-  --cat-familie: var(--green);
-  --cat-familie-dark: #6cc392;
-  --cat-familie-soft: var(--soft-green);
-  --cat-familie-text: var(--soft-green-text);
   --cat-verein: var(--ink);
   --cat-verein-dark: #dce3e8;
   --cat-verein-soft: var(--soft-gray);
@@ -313,18 +305,6 @@ button {
   flex: 0 0 auto;
   background: var(--dot, var(--ink));
 }
-.cat-feste {
-  --dot: var(--cat-feste);
-  --dot-dark: var(--cat-feste-dark);
-  --soft: var(--cat-feste-soft);
-  --soft-text: var(--cat-feste-text);
-}
-.cat-familie {
-  --dot: var(--cat-familie);
-  --dot-dark: var(--cat-familie-dark);
-  --soft: var(--cat-familie-soft);
-  --soft-text: var(--cat-familie-text);
-}
 .cat-verein {
   --dot: var(--cat-verein);
   --dot-dark: var(--cat-verein-dark);
@@ -364,8 +344,6 @@ button {
 }
 
 /* Category filters on the Termine page toggle these classes on <html>. */
-.hide-cat-feste [data-cat="feste"],
-.hide-cat-familie [data-cat="familie"],
 .hide-cat-verein [data-cat="verein"] {
   display: none !important;
 }

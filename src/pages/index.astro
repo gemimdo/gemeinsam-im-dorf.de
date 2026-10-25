@@ -39,16 +39,20 @@ const featuredDocs = documents
           <p class="eyebrow">Kalender</p>
           <h2 id="cal-title" class="display h2">Was ist los in {site.village}?</h2>
         </div>
-        <div class="legend">
-          {
-            Object.entries(eventCategories).map(([key, cat]) => (
-              <span class={`legend-item cat-${key}`}>
-                <span class="dot" />
-                {cat.label}
-              </span>
-            ))
-          }
-        </div>
+        {
+          Object.keys(eventCategories).length > 1 && (
+            <div class="legend">
+              {
+                Object.entries(eventCategories).map(([key, cat]) => (
+                  <span class={`legend-item cat-${key}`}>
+                    <span class="dot" />
+                    {cat.label}
+                  </span>
+                ))
+              }
+            </div>
+          )
+        }
       </div>
       <Calendar events={events} variant="compact" />
     </section>

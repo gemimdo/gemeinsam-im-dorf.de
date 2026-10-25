@@ -18,16 +18,16 @@ New content appears only after the next build (`bun run build`, then upload `dis
 
 ### Google Calendar
 
-- **Category** (coloured dot): which calendar the event is in. There is one public calendar per
-  category – *Feste & Kultur*, *Kinder & Familie*, *Vereinsleben* – configured as
-  `GOOGLE_CALENDAR_FESTE`, `GOOGLE_CALENDAR_FAMILIE`, `GOOGLE_CALENDAR_VEREIN`. (Event colours
-  can't be used: Google doesn't expose them through public access.) The older single
-  `GOOGLE_CALENDAR_ID` still works and counts as *Vereinsleben*.
-- **Subscribing**: the site builds its own combined feed `/termine/alle.ics` from all three
-  calendars; "Kalender abonnieren" links there.
+- **Category**: all events come from one public calendar and are shown as *Vereinsleben*.
+  Further categories (one public calendar each) can be added in `eventCategories`
+  (`src/site.config.ts`) and `env.calendars` (`src/lib/google.ts`); the colour legend and
+  filters appear automatically once there is more than one. (Event colours can't be used:
+  Google doesn't expose them through public access.)
+- **Subscribing**: the site builds its own feed `/termine/alle.ics` from the
+  configured calendars; "Kalender abonnieren" links there.
 - **Description**: shown as event details. The lines `Eintritt: …` and `Kontakt: …` are
   picked out and shown as their own rows.
-- Each calendar must be public ("Make available to public" + "See all event details").
+- The calendar must be public ("Make available to public" + "See all event details").
 
 ### Drive folders
 
@@ -61,7 +61,7 @@ Dokumente/                     → DRIVE_DOCUMENTS_FOLDER_ID
 1. In [Google Cloud Console](https://console.cloud.google.com/) create a project, enable
    *Google Drive API* and *Google Calendar API*, create an API key and restrict it to those
    two APIs. It is only used during the build and never ends up in the site.
-2. Copy `.env.example` to `.env` and fill in the key, the three calendar IDs and both folder IDs.
+2. Copy `.env.example` to `.env` and fill in the key, the calendar ID and both folder IDs.
 
 ## Development
 
@@ -92,7 +92,7 @@ One-time setup in the GitHub repository → *Settings → Secrets and variables 
 
 | Secret | Value |
 |---|---|
-| `GOOGLE_API_KEY`, `GOOGLE_CALENDAR_FESTE`, `GOOGLE_CALENDAR_FAMILIE`, `GOOGLE_CALENDAR_VEREIN`, `DRIVE_PHOTOS_FOLDER_ID`, `DRIVE_DOCUMENTS_FOLDER_ID` | same as in `.env` |
+| `GOOGLE_API_KEY`, `GOOGLE_CALENDAR_ID`, `DRIVE_PHOTOS_FOLDER_ID`, `DRIVE_DOCUMENTS_FOLDER_ID` | same as in `.env` |
 | `SFTP_HOST` | Strato SFTP server, e.g. `ssh.strato.de` |
 | `SFTP_USER`, `SFTP_PASSWORD` | Strato SFTP login |
 | `SFTP_REMOTE_DIR` | folder on the webspace the domain points to, e.g. `/gemeinsam-im-dorf` |

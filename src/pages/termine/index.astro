@@ -41,16 +41,22 @@ const groupLabel = (key: string) => `${MONTHS[Number(key.slice(5)) - 1]} ${key.s
 
   <main class="wrap main">
     <div class="toolbar">
-      <div class="pill-group" role="group" aria-label="Kategorien filtern">
-        {
-          Object.entries(eventCategories).map(([key, cat]) => (
-            <button type="button" class={`pill cat-pill cat-${key}`} data-cat-filter={key} aria-pressed="true">
-              <span class="dot" />
-              {cat.label}
-            </button>
-          ))
-        }
-      </div>
+      {
+        Object.keys(eventCategories).length > 1 ? (
+          <div class="pill-group" role="group" aria-label="Kategorien filtern">
+            {
+              Object.entries(eventCategories).map(([key, cat]) => (
+                <button type="button" class={`pill cat-pill cat-${key}`} data-cat-filter={key} aria-pressed="true">
+                  <span class="dot" />
+                  {cat.label}
+                </button>
+              ))
+            }
+          </div>
+        ) : (
+          <span />
+        )
+      }
       <div class="views" role="group" aria-label="Ansicht">
         <button type="button" data-view="month" aria-pressed="true">Monat</button>
         <button type="button" data-view="list" aria-pressed="false">Liste</button>

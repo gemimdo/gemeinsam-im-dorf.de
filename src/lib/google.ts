@@ -10,11 +10,9 @@ const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 export const env = {
   apiKey: read("GOOGLE_API_KEY"),
-  /** One public calendar per event category. GOOGLE_CALENDAR_ID is the original single calendar; it counts as Vereinsleben. */
+  /** One public calendar per event category (src/site.config.ts → eventCategories). */
   calendars: {
-    feste: read("GOOGLE_CALENDAR_FESTE"),
-    familie: read("GOOGLE_CALENDAR_FAMILIE"),
-    verein: read("GOOGLE_CALENDAR_VEREIN") || read("GOOGLE_CALENDAR_ID"),
+    verein: read("GOOGLE_CALENDAR_ID"),
   } satisfies Record<EventCategory, string | undefined>,
   photosFolderId: read("DRIVE_PHOTOS_FOLDER_ID"),
   documentsFolderId: read("DRIVE_DOCUMENTS_FOLDER_ID"),
