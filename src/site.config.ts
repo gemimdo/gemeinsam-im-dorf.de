@@ -25,7 +25,7 @@ export const site = {
     "Wir sind ein gemeinnütziger Verein im Schkölener Ortsteil Rockau. Unser Ziel ist es, das Zusammenleben aller Menschen im Dorf zu gestalten und Angebote für alle Altersgruppen zu schaffen. In unserem Verein sind alle Menschen willkommen.",
 
   board: [
-    { name: "Danny Himmelreich", role: "1. Vorsitz" },
+    { name: "Danny Himmelreich", role: "1. Vorsitz", email: "gemimdo@yahoo.com" },
     { name: "Dorothea Roth", role: "2. Vorsitz" },
     { name: "Anette Thielow", role: "Kasse" },
   ],
