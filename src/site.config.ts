@@ -10,7 +10,7 @@ export const site = {
   annualFee: "24 €",
   reducedFee: "12 €",
 
-  address: { street: "Rockau 51", zip: "07619", city: "Schkölen" },
+  address: { street: "Rockau 71", zip: "07619", city: "Schkölen" },
   email: "gemimdo@yahoo.com",
   phone: "0176 64103757",
 
