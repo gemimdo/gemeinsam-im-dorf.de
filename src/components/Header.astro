@@ -1,6 +1,7 @@
 ---
 import Icon from "./Icon.astro";
-import ClockTowerLogo from "./ClockTowerLogo.astro";
+import { Image } from "astro:assets";
+import crest from "../assets/wappen.webp";
 import { site } from "../site.config";
 
 const nav = [
@@ -17,7 +18,7 @@ const isCurrent = (href: string) => (href === "/" ? path === "/" : path.startsWi
 <header class="site-header">
   <div class="bar wrap">
     <a href="/" class="brand">
-      <ClockTowerLogo />
+      <Image src={crest} alt="" height={48} densities={[1, 2]} format="webp" class="crest" loading="eager" />
       <span class="brand-text">
         <span class="brand-name">{site.clubName} {site.legalForm}</span>
         <span class="brand-sub">{site.village}</span>
@@ -120,6 +121,11 @@ const isCurrent = (href: string) => (href === "/" ? path === "/" : path.startsWi
   }
   .brand:hover {
     color: var(--ink);
+  }
+  .brand :global(.crest) {
+    width: auto;
+    height: 48px;
+    flex: 0 0 auto;
   }
   .brand-text {
     display: flex;
