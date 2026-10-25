@@ -9,4 +9,4 @@ export const getStaticPaths = (async () => {
   return events.map((event) => ({ params: { id: event.id }, props: { event } }));
 }) satisfies GetStaticPaths;
 
-export const GET: APIRoute = ({ props }) => icsFile([props.event as EventView]);
+export const GET: APIRoute = ({ props, site }) => icsFile([props.event as EventView], site);

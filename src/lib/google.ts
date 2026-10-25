@@ -147,6 +147,24 @@ export interface CalendarEvent {
   location?: string;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
+  /** Google Drive files attached in Google Calendar. */
+  attachments?: { fileId?: string; title: string; mimeType?: string }[];
+}
+
+export interface DriveFileMeta {
+  name: string;
+  mimeType: string;
+  modifiedTime: string;
+  fileExtension?: string;
+  size?: string;
+}
+
+/** Metadata of one Drive file; fails (404) unless it is shared as "Anyone with the link". */
+export async function getDriveFileMeta(fileId: string, apiKey: string): Promise<DriveFileMeta> {
+  const url = new URL(`${DRIVE_API}/${fileId}`);
+  url.searchParams.set("key", apiKey);
+  url.searchParams.set("fields", "name, mimeType, modifiedTime, fileExtension, size");
+  return getJson<DriveFileMeta>(url);
 }
 
 export async function listCalendarEvents(

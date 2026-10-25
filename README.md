@@ -27,6 +27,9 @@ New content appears only after the next build (`bun run build`, then upload `dis
   configured calendars; "Kalender abonnieren" links there.
 - **Description**: shown as event details. The lines `Eintritt: …` and `Kontakt: …` are
   picked out and shown as their own rows.
+- **Attachments**: Google Drive files attached to an event are copied onto the site and
+  linked in the event details (and in the calendar feed). The file must be shared as
+  "Anyone with the link", otherwise it is skipped with a warning in the build log.
 - The calendar must be public ("Make available to public" + "See all event details").
 
 ### Drive folders

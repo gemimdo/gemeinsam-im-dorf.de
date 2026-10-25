@@ -22,7 +22,7 @@ function fold(line: string): string {
   return parts.join("\r\n ");
 }
 
-function vevent(event: EventView, stamp: string): string[] {
+function vevent(event: EventView, stamp: string, site: URL): string[] {
   const lastDay = event.days[event.days.length - 1];
   const timing = event.allDay
     ? [`DTSTART;VALUE=DATE:${dateOnly(event.firstDay)}`, `DTEND;VALUE=DATE:${dateOnly(addDays(lastDay, 1))}`]
@@ -40,12 +40,14 @@ function vevent(event: EventView, stamp: string): string[] {
     `CATEGORIES:${escape(event.categoryLabel)}`,
     ...(event.location ? [`LOCATION:${escape(event.location)}`] : []),
     ...(description ? [`DESCRIPTION:${escape(description)}`] : []),
+    ...event.attachments.map((a) => `ATTACH;FMTTYPE=${a.mimeType}:${new URL(a.href, site).href}`),
     "END:VEVENT",
   ];
 }
 
 /** A complete .ics file. `name` is shown by calendar apps for subscribed feeds. */
-export function icsFile(events: EventView[], name?: string): Response {
+export function icsFile(events: EventView[], site: URL | undefined, name?: string): Response {
+  const base = site ?? new URL("https://gemeinsam-im-dorf.de");
   const stamp = utcStamp(new Date());
   const lines = [
     "BEGIN:VCALENDAR",
@@ -53,7 +55,7 @@ export function icsFile(events: EventView[], name?: string): Response {
     "PRODID:-//gemeinsam-im-dorf.de//Termine//DE",
     "CALSCALE:GREGORIAN",
     ...(name ? [`X-WR-CALNAME:${escape(name)}`, "X-WR-TIMEZONE:Europe/Berlin", "REFRESH-INTERVAL;VALUE=DURATION:PT1H"] : []),
-    ...events.flatMap((e) => vevent(e, stamp)),
+    ...events.flatMap((e) => vevent(e, stamp, base)),
     "END:VCALENDAR",
   ];
   return new Response(lines.map(fold).join("\r\n") + "\r\n", {

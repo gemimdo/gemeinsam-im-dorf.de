@@ -123,6 +123,19 @@ const panelDays = [...byDay.keys()];
                         )}
                       </dl>
                     )}
+                    {e.attachments.length > 0 && (
+                      <ul class="attachments" aria-label="Anhänge">
+                        {e.attachments.map((a) => (
+                          <li>
+                            <a href={a.href} target="_blank" rel="noopener" class="attachment">
+                              <Icon name="file" size={16} />
+                              <span>{a.title}</span>
+                              <span class="attachment-type">{a.type}</span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <a href={e.icsPath} class="btn btn-sm light-btn">
                       In meinen Kalender
                     </a>
@@ -170,6 +183,19 @@ const panelDays = [...byDay.keys()];
                           </>
                         )}
                       </dl>
+                      {e.attachments.length > 0 && (
+                        <ul class="attachments" aria-label="Anhänge">
+                          {e.attachments.map((a) => (
+                            <li>
+                              <a href={a.href} target="_blank" rel="noopener" class="attachment">
+                                <Icon name="file" size={16} />
+                                <span>{a.title}</span>
+                                <span class="attachment-type">{a.type}</span>
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       <div class="detail-actions">
                         <a href={e.icsPath} class="btn btn-sm light-btn">
                           <Icon name="calendar" size={16} />
@@ -544,6 +570,36 @@ const panelDays = [...byDay.keys()];
   .facts dd {
     margin: 0;
     color: #ffffff;
+  }
+  .attachments {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .attachment {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #3a4a58;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .attachment:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: #ffffff;
+  }
+  .attachment-type {
+    font-size: 12px;
+    font-weight: 500;
+    color: #a9b6c1;
   }
   .detail-actions {
     display: flex;

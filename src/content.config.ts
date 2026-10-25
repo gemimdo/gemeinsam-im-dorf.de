@@ -9,6 +9,7 @@ import { toLocalTime } from "./lib/format";
 import { renderPdfPages } from "./lib/pdf-pages";
 import {
   GOOGLE_EXPORTABLE,
+  type CalendarEvent,
   type DriveFile,
   driveDownloadUrl,
   driveExportPdfUrl,
@@ -16,6 +17,7 @@ import {
   calendarRange,
   configuredCalendars,
   env,
+  getDriveFileMeta,
   listCategoryEvents,
   walkDriveFolder,
 } from "./lib/google";
@@ -253,22 +255,26 @@ const events = defineCollection({
     const { from, to } = calendarRange();
     const items = await listCategoryEvents(apiKey, from, to);
 
-    return items.map(({ category, event: e }) => {
-      const details = parseDescription(e.description ? htmlToText(e.description) : "");
-      const data = {
-        title: e.summary?.trim() || "Termin",
-        category,
-        location: e.location,
-        ...details,
-        allDay: Boolean(e.start.date),
-        // All-day events come as plain dates (end exclusive). Noon keeps them on the
-        // right day regardless of the build machine timezone or DST shifts.
-        start: e.start.dateTime ?? `${e.start.date}T12:00:00`,
-        end: e.end.dateTime ?? `${e.end.date}T12:00:00`,
-      };
-      // Event IDs are only unique within one calendar.
-      return { id: `${category}-${e.id}`, data, digest: JSON.stringify(data) };
-    });
+    return Promise.all(
+      items.map(async ({ category, event: e }) => {
+        const details = parseDescription(e.description ? htmlToText(e.description) : "");
+        const attachments = await eventAttachments(e.attachments ?? [], apiKey);
+        const data = {
+          title: e.summary?.trim() || "Termin",
+          category,
+          location: e.location,
+          ...details,
+          allDay: Boolean(e.start.date),
+          // All-day events come as plain dates (end exclusive). Noon keeps them on the
+          // right day regardless of the build machine timezone or DST shifts.
+          start: e.start.dateTime ?? `${e.start.date}T12:00:00`,
+          end: e.end.dateTime ?? `${e.end.date}T12:00:00`,
+          attachments,
+        };
+        // Event IDs are only unique within one calendar.
+        return { id: `${category}-${e.id}`, data, digest: JSON.stringify(data) };
+      }),
+    );
   }),
   schema: z.object({
     title: z.string(),
@@ -280,8 +286,60 @@ const events = defineCollection({
     allDay: z.boolean(),
     start: z.string(),
     end: z.string(),
+    /** Re-hosted under /termine/anhaenge/<fileName> (src/pages/termine/anhaenge). */
+    attachments: z.array(
+      z.object({
+        title: z.string(),
+        fileName: z.string(),
+        driveId: z.string(),
+        version: z.string(),
+        exported: z.boolean(),
+        mimeType: z.string(),
+        ext: z.string(),
+        size: z.number().optional(),
+      }),
+    ),
   }),
 });
+
+/**
+ * Drive attachments of a calendar event, downloaded once into the cache so the site can
+ * serve them itself. Files that aren't shared publicly are skipped with a warning – an
+ * attachment should never block the calendar.
+ */
+async function eventAttachments(attachments: NonNullable<CalendarEvent["attachments"]>, apiKey: string) {
+  const result = [];
+  for (const a of attachments) {
+    if (!a.fileId) continue;
+    try {
+      const meta = await getDriveFileMeta(a.fileId, apiKey);
+      const exported = GOOGLE_EXPORTABLE.has(meta.mimeType);
+      if (meta.mimeType.startsWith("application/vnd.google-apps.") && !exported) continue;
+      const ext = exported ? "pdf" : (meta.fileExtension || meta.name.split(".").pop() || "bin").toLowerCase();
+      const title = exported ? meta.name : meta.name.replace(/\.[^.]+$/, "");
+      await cachedDriveFile({
+        id: a.fileId,
+        version: meta.modifiedTime,
+        ext,
+        url: () => (exported ? driveExportPdfUrl(a.fileId!, apiKey) : driveDownloadUrl(a.fileId!, apiKey)),
+        fallbackUrl: exported ? undefined : drivePublicDownloadUrl(a.fileId),
+      });
+      result.push({
+        title,
+        fileName: `${slugify(title)}-${a.fileId.slice(0, 6)}.${ext}`,
+        driveId: a.fileId,
+        version: meta.modifiedTime,
+        exported,
+        mimeType: exported ? "application/pdf" : meta.mimeType,
+        ext,
+        size: meta.size ? Number(meta.size) : undefined,
+      });
+    } catch (error) {
+      console.warn(`[events] attachment "${a.title}" skipped: ${(error as Error).message}`);
+    }
+  }
+  return result;
+}
 
 /**
  * Lines like "Eintritt: frei" or "Kontakt: Anna, 0123" in the event description

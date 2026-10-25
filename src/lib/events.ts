@@ -17,11 +17,21 @@ export interface EventView {
   /** Every German-local day the event covers (all-day events can span several). */
   days: string[];
   firstDay: string;
-  /** "15:00 Uhr" or "ganztägig" */
+  /** "11:00 – 13:00 Uhr", "22:00 Uhr – Sa, 02:00 Uhr" or "ganztägig" */
   timeLabel: string;
-  /** "Samstag, 5. Dezember 2026, 15:00 Uhr" */
+  /** "Samstag, 7. November 2026, 11:00 – 13:00 Uhr" */
   whenLong: string;
   icsPath: string;
+  attachments: { title: string; href: string; type: string; mimeType: string; size?: number }[];
+}
+
+/** Start and end of a timed event; the end day is named only when it differs. */
+function timeRange(start: Date, end: Date): string {
+  const from = formatTime(start);
+  if (end.getTime() <= start.getTime()) return `${from} Uhr`;
+  const endDay = dayKey(end);
+  if (endDay === dayKey(start)) return `${from} – ${formatTime(end)} Uhr`;
+  return `${from} Uhr – ${describeKey(endDay).wd}, ${formatTime(end)} Uhr`;
 }
 
 export async function getEvents(): Promise<EventView[]> {
@@ -37,7 +47,7 @@ export async function getEvents(): Promise<EventView[]> {
       for (let k = firstDay; k <= lastDay; k = addDays(k, 1)) days.push(k);
 
       const first = describeKey(firstDay);
-      const timeLabel = data.allDay ? "ganztägig" : `${formatTime(start)} Uhr`;
+      const timeLabel = data.allDay ? "ganztägig" : timeRange(start, end);
       const lastLabel = lastDay !== firstDay ? ` bis ${describeKey(lastDay).long}` : "";
       return {
         id,
@@ -48,6 +58,13 @@ export async function getEvents(): Promise<EventView[]> {
         timeLabel,
         whenLong: `${first.long} ${first.year}${lastLabel}${data.allDay ? "" : `, ${timeLabel}`}`,
         icsPath: `/termine/${encodeURIComponent(id)}.ics`,
+        attachments: data.attachments.map((a) => ({
+          title: a.title,
+          href: `/termine/anhaenge/${a.fileName}`,
+          type: a.ext.toUpperCase(),
+          mimeType: a.mimeType,
+          size: a.size,
+        })),
       };
     })
     .sort((a, b) => a.start.localeCompare(b.start));
