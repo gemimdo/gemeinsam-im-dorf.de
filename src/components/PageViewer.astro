@@ -148,12 +148,12 @@ const { id, title, pages, downloadHref, fileType } = Astro.props;
     background: #ffffff;
     box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.6);
   }
-  /* A lone image (flyer) fits the screen; multi-page PDFs keep scrolling at reading width. */
+  /* Every page fits the screen; multi-page PDFs scroll from page to page. */
   .viewer-pages.single {
     justify-content: center;
     padding-bottom: clamp(12px, 3vw, 32px);
   }
-  .viewer-pages.single :global(.viewer-page) {
+  .viewer-pages :global(.viewer-page) {
     max-height: calc(100dvh - 69px - 2 * clamp(12px, 3vw, 32px));
     object-fit: contain;
   }

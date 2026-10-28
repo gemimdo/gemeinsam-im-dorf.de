@@ -27,7 +27,7 @@ const featuredDocs = documents
   .sort((a, b) => a.data.title.localeCompare(b.data.title, "de"));
 ---
 
-<Layout description={`${site.clubName}: Feste, Arbeitseinsätze und Zusammenhalt in ${site.village}.`}>
+<Layout description={`${site.clubName} ${site.legalForm} – der Dorfverein in ${site.village} (${site.address.city}): Feste, Dorftreff, Jugendclub, Bibliothek und Termine.`}>
   <main>
     <Hero photos={heroPhotos} events={events} />
 

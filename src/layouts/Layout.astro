@@ -9,8 +9,33 @@ interface Props {
   description?: string;
 }
 
-const { title, description = `${site.clubName} – Termine, Fotos und Neuigkeiten aus ${site.village}.` } = Astro.props;
-const fullTitle = title ? `${title} – ${site.clubName}` : site.clubName;
+const { title, description = `${site.clubName} ${site.legalForm} – Termine, Fotos und Neuigkeiten aus ${site.village}.` } = Astro.props;
+const fullName = `${site.clubName} ${site.legalForm}`;
+const fullTitle = title ? `${title} – ${fullName}` : `${fullName} – Verein in ${site.village} (${site.address.city})`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const logo = new URL("/icon-192.png", Astro.site);
+
+// Lets search engines tie the site to the club, its village and its contact details.
+const organization = {
+  "@context": "https://schema.org",
+  "@type": "NGO",
+  name: fullName,
+  url: Astro.site?.href,
+  logo: logo.href,
+  email: site.email,
+  telephone: site.phone,
+  foundingDate: site.founded,
+  description: site.summary,
+  areaServed: `${site.village}, ${site.address.city}`,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: site.address.street,
+    postalCode: site.address.zip,
+    addressLocality: site.address.city,
+    addressRegion: "Thüringen",
+    addressCountry: "DE",
+  },
+};
 ---
 
 <!doctype html>
@@ -24,6 +49,16 @@ const fullTitle = title ? `${title} – ${site.clubName}` : site.clubName;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:site_name" content={fullName} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={logo} />
+    {Astro.url.pathname === "/" && <script type="application/ld+json" set:html={JSON.stringify(organization)} />}
     <script is:inline>
       // Applied before first paint so a stored dark theme never flashes light.
       try {
