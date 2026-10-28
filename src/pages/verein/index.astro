@@ -9,10 +9,10 @@ const membershipForm = documents.find((d) => /beitritt|mitgliedsantrag|aufnahmea
 const membershipHref = membershipForm ? `/dokumente/dateien/${membershipForm.data.fileName}` : "/dokumente/";
 
 const activities: { icon: IconName; title: string; text: string }[] = [
-  { icon: "party", title: "Feste feiern", text: "Sommerfest, Maibaum, Weihnachtsmarkt – organisiert von vielen Händen." },
+  { icon: "party", title: "Feste feiern", text: "Maibaumfest, Sport-, Spaß- und Spielefest, Lichterumzug – organisiert von vielen Händen." },
   { icon: "leaf", title: "Dorf pflegen", text: "Anger, Teich, Bänke und Spielplatz: Arbeitseinsätze zweimal im Jahr." },
-  { icon: "family", title: "Kinder & Familien", text: "Bastelnachmittage, Kinderfest und der Martinsumzug." },
-  { icon: "heart", title: "Nachbarschaft", text: "Willkommenspaket für Neuzugezogene und Hilfe, wenn jemand sie braucht." },
+  { icon: "family", title: "Kinder & Familien", text: "Kreativ- und Bastelnachmittage, Jugendclub, Bibliothek und Lampionumzug." },
+  { icon: "heart", title: "Nachbarschaft", text: "Hilfe, wenn jemand sie braucht." },
 ];
 ---
 

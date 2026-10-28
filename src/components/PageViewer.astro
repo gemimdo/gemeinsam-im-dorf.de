@@ -29,7 +29,7 @@ const { id, title, pages, downloadHref, fileType } = Astro.props;
       </button>
     </span>
   </div>
-  <div class="viewer-pages">
+  <div class:list={["viewer-pages", { single: pages.length === 1 }]}>
     {
       pages.map((page, i) => (
         <Image
@@ -130,6 +130,8 @@ const { id, title, pages, downloadHref, fileType } = Astro.props;
   }
   .viewer-pages {
     flex: 1;
+    /* Without this Firefox lets the list grow past the dialog instead of scrolling it. */
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     display: flex;
@@ -145,5 +147,14 @@ const { id, title, pages, downloadHref, fileType } = Astro.props;
     border-radius: 4px;
     background: #ffffff;
     box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.6);
+  }
+  /* A lone image (flyer) fits the screen; multi-page PDFs keep scrolling at reading width. */
+  .viewer-pages.single {
+    justify-content: center;
+    padding-bottom: clamp(12px, 3vw, 32px);
+  }
+  .viewer-pages.single :global(.viewer-page) {
+    max-height: calc(100dvh - 69px - 2 * clamp(12px, 3vw, 32px));
+    object-fit: contain;
   }
 </style>
