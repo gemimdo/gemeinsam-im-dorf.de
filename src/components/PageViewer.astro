@@ -41,6 +41,7 @@ const { id, title, pages, downloadHref, fileType } = Astro.props;
           quality={82}
           loading="lazy"
           class="viewer-page"
+          style={`--ratio: ${page.width / page.height}`}
         />
       ))
     }
@@ -140,21 +141,19 @@ const { id, title, pages, downloadHref, fileType } = Astro.props;
     gap: 16px;
     padding: clamp(12px, 3vw, 32px) clamp(8px, 3vw, 24px) 48px;
   }
+  /* Each page fits the screen, and its size is fixed from the aspect ratio before it loads:
+     an unloaded lazy image with auto size is 0px tall, and Firefox then never loads it. */
   .viewer-pages :global(.viewer-page) {
-    width: auto;
-    max-width: min(100%, 900px);
+    flex: none;
+    width: min(100%, 900px, calc((100dvh - 69px - 2 * clamp(12px, 3vw, 32px)) * var(--ratio)));
     height: auto;
+    aspect-ratio: var(--ratio);
     border-radius: 4px;
     background: #ffffff;
     box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.6);
   }
-  /* Every page fits the screen; multi-page PDFs scroll from page to page. */
   .viewer-pages.single {
     justify-content: center;
     padding-bottom: clamp(12px, 3vw, 32px);
-  }
-  .viewer-pages :global(.viewer-page) {
-    max-height: calc(100dvh - 69px - 2 * clamp(12px, 3vw, 32px));
-    object-fit: contain;
   }
 </style>
